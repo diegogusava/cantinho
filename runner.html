@@ -6,12 +6,20 @@
 <meta name="theme-color" content="#ff4fa3">
 <link rel="stylesheet" href="common.css">
 <title>Corredor</title>
+<style>
+  .banner { white-space: pre-line; }
+  #levels { position: fixed; inset: 0; z-index: 7; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+  #levels[hidden] { display: none; }
+  #levels h1 { color: #ff4fa3; margin: 0 0 8px; }
+  #levels button { width: min(260px, 80vw); padding: 14px; font-size: 1.6rem; font-weight: 700; border: 3px solid #ff4fa3; border-radius: 16px; background: #fff; color: #ff4fa3; }
+</style>
 </head>
 <body>
 <canvas id="game"></canvas>
 <div class="hud" id="hud"></div>
 <a class="back" href="index.html">🏠</a>
 <div class="banner" id="banner"></div>
+<div id="levels"><h1>Qual nível?</h1></div>
 <script src="common.js"></script>
 <script src="cheer.js"></script>
 <script>
@@ -19,23 +27,35 @@ const canvas = document.getElementById("game");
 const ctx = setupCanvas(canvas);
 const hud = document.getElementById("hud");
 const banner = document.getElementById("banner");
+const menu = document.getElementById("levels");
 
 const SIZE = 56;
-let player, obstacles, score, speed, untilSpawn, over, best;
-try { best = Number(localStorage.getItem("runner:best")) || 0; } catch { best = 0; }
+const OBSTACLES_PER_LEVEL = 8;
+const DIFFICULTIES = {
+  "Fácil": { speed: 0.42, bump: 0.04, gap: 1.4 },
+  "Médio": { speed: 0.55, bump: 0.05, gap: 1.15 },
+  "Difícil": { speed: 0.7, bump: 0.06, gap: 1 },
+};
+const LEVEL_NEWS = { 2: "Cuidado com os pássaros! 🐦", 3: "Cactos duplos! 🌵🌵" };
 
+let difficulty, player, obstacles, score, untilSpawn, over, best, flash;
+const level = () => 1 + Math.floor(score / OBSTACLES_PER_LEVEL);
+const speed = () => W * (difficulty.speed + difficulty.bump * Math.min(level() - 1, 9));
 const groundY = () => H * 0.75;
+const birdBottom = () => groundY() - SIZE * 1.3;
 
 function start() {
   player = { x: W * 0.2, y: groundY(), vy: 0 };
   obstacles = [];
   score = 0;
-  speed = W * 0.55;
+  flash = 0;
   untilSpawn = 1;
   over = false;
   banner.textContent = "";
-  hud.textContent = "🌵 0";
+  showHud();
 }
+
+const showHud = () => { hud.textContent = "Nível " + level() + " · 🌵 " + score; };
 
 function jump() {
   if (over) {
@@ -52,49 +72,81 @@ function finish() {
   over = performance.now();
   if (score > best) {
     best = score;
-    try { localStorage.setItem("runner:best", best); } catch {}
+    try { localStorage.setItem("runner:best:" + difficultyName, best); } catch {}
   }
   banner.textContent = "Tente de novo! Recorde: " + best;
   cheer("retry");
 }
 
+function levelUp() {
+  const news = LEVEL_NEWS[level()];
+  banner.textContent = "Nível " + level() + "! 🎉" + (news ? "\n" + news : "");
+  flash = 1;
+  [523, 659, 784, 1047].forEach((frequency, i) => setTimeout(() => beep(frequency, 0.15), i * 110));
+  setTimeout(() => cheer("win"), 450);
+  setTimeout(() => { if (!over) banner.textContent = ""; }, 2200);
+}
+
+function spawn() {
+  const kind = level() >= 2 && Math.random() < 0.35 ? "bird" : "cactus";
+  const count = kind === "cactus" && level() >= 3 && Math.random() < 0.3 ? 2 : 1;
+  obstacles.push({ x: W + SIZE, kind, count, passed: false });
+  untilSpawn = (0.8 + Math.random() * 0.9) * difficulty.gap;
+}
+
+function hits(o) {
+  const half = SIZE * (0.5 + 0.4 * (o.count - 1));
+  if (Math.abs(o.x + SIZE * 0.4 * (o.count - 1) - player.x) >= half) return false;
+  return o.kind === "bird"
+    ? player.y - SIZE * 0.8 < birdBottom()
+    : player.y > groundY() - SIZE * 0.7;
+}
+
 function update(dt) {
-  if (over) return;
+  if (over || !menu.hidden) return;
+  flash = Math.max(0, flash - dt * 1.5);
   player.vy += H * 3.2 * dt;
   player.y = Math.min(player.y + player.vy * dt, groundY());
   if (player.y === groundY()) player.vy = 0;
 
   untilSpawn -= dt;
-  if (untilSpawn <= 0) {
-    obstacles.push({ x: W + SIZE, passed: false });
-    untilSpawn = (0.9 + Math.random() * 1.1) * (W * 0.55 / speed);
-  }
-  obstacles.forEach((o) => { o.x -= speed * dt; });
-  obstacles = obstacles.filter((o) => o.x > -SIZE);
+  if (untilSpawn <= 0) spawn();
+  obstacles.forEach((o) => { o.x -= speed() * dt; });
+  obstacles = obstacles.filter((o) => o.x > -SIZE * 2);
 
   for (const o of obstacles) {
     if (!o.passed && o.x < player.x - SIZE / 2) {
       o.passed = true;
       score++;
-      speed += 12;
-      hud.textContent = "🌵 " + score;
+      showHud();
       beep(660, 0.1);
+      if (score % OBSTACLES_PER_LEVEL === 0) levelUp();
     }
-    const overlapX = Math.abs(o.x - player.x) < SIZE * 0.5;
-    const overlapY = player.y > groundY() - SIZE * 0.7;
-    if (overlapX && overlapY) finish();
+    if (hits(o)) finish();
   }
 }
 
 function draw() {
   ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = "hsl(" + ((level() - 1) * 47 + 330) % 360 + " 85% 94%)";
+  ctx.fillRect(0, 0, W, groundY());
   ctx.fillStyle = "#cfeccf";
   ctx.fillRect(0, groundY(), W, H - groundY());
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
   ctx.font = SIZE + "px system-ui";
   ctx.fillText(over ? "😵" : "🐰", player.x, player.y + 6);
-  obstacles.forEach((o) => ctx.fillText("🌵", o.x, groundY() + 6));
+  obstacles.forEach((o) => {
+    for (let i = 0; i < o.count; i++) {
+      const x = o.x + i * SIZE * 0.8;
+      if (o.kind === "bird") ctx.fillText("🐦", x, birdBottom());
+      else ctx.fillText("🌵", x, groundY() + 6);
+    }
+  });
+  if (flash) {
+    ctx.fillStyle = "rgba(255,255,255," + flash * 0.8 + ")";
+    ctx.fillRect(0, 0, W, H);
+  }
 }
 
 let last = performance.now();
@@ -105,7 +157,23 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
+let difficultyName;
+Object.entries(DIFFICULTIES).forEach(([name, settings]) => {
+  const button = document.createElement("button");
+  button.textContent = name;
+  button.onclick = () => {
+    difficultyName = name;
+    difficulty = settings;
+    try { best = Number(localStorage.getItem("runner:best:" + name)) || 0; } catch { best = 0; }
+    menu.hidden = true;
+    start();
+  };
+  menu.append(button);
+});
+
 canvas.addEventListener("pointerdown", jump);
+difficulty = DIFFICULTIES["Fácil"];
+best = 0;
 start();
 requestAnimationFrame(loop);
 </script>
