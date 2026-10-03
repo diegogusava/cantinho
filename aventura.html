@@ -100,7 +100,7 @@ const JUMP = 14;
 const SOLID = "#=?";
 const keys = { left: false, right: false, jump: false };
 
-let level = 0;
+let level = Math.min(savedLevel("aventura", 0), LEVELS.length - 1);
 let grid, enemies, player, stars, starsAtStart, state, timer, T, camX, offsetY, facing, prevJump;
 
 function load() {
@@ -201,6 +201,7 @@ function update(dt) {
   if (state === "won") {
     if ((timer -= dt) <= 0) {
       level = (level + 1) % LEVELS.length;
+      saveLevel("aventura", level);
       starsAtStart = level === 0 ? 0 : stars;
       load();
     }

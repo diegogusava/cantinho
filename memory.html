@@ -36,7 +36,7 @@ const grid = document.getElementById("grid");
 const hud = document.getElementById("hud");
 const banner = document.getElementById("banner");
 
-let level = 0;
+let level = savedLevel("memory", 0);
 let scores = [];
 let turn = 0;
 let open = [];
@@ -110,7 +110,7 @@ function win() {
   const winners = scores.flatMap((score, i) => (score === best ? ["J" + (i + 1)] : []));
   banner.textContent = scores.length === 1 ? "Parabéns! 💖" : winners.length > 1 ? "Empate! 💖" : winners[0] + " ganhou! 💖";
   cheer("win");
-  setTimeout(() => { level++; scores = scores.map(() => 0); start(); }, 2500);
+  setTimeout(() => { saveLevel("memory", ++level); scores = scores.map(() => 0); start(); }, 2500);
 }
 </script>
 </body>

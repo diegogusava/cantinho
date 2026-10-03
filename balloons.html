@@ -25,7 +25,7 @@ const COLORS = ["#ff4fa3", "#ffb347", "#4fc3f7", "#81c784", "#ba68c8", "#ffd54f"
 let balloons = [];
 let sparks = [];
 let popped = 0;
-let level = 1;
+let level = savedLevel("balloons", 1);
 let between = false;
 let untilSpawn = 0;
 
@@ -63,7 +63,7 @@ function completeLevel() {
   banner.textContent = "Nível " + level + " completo! 💖";
   cheer("win");
   setTimeout(() => {
-    level++;
+    saveLevel("balloons", ++level);
     popped = 0;
     between = false;
     banner.textContent = "";
