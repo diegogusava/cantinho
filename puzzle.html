@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ff4fa3">
+<link rel="stylesheet" href="common.css">
+<title>Quebra-cabeça</title>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div class="hud" id="hud"></div>
+<a class="back" href="jogos.html">🏠</a>
+<div class="banner" id="banner"></div>
+<script src="common.js"></script>
+<script src="photos.js"></script>
+<script>
+const canvas = document.getElementById("game");
+const ctx = setupCanvas(canvas);
+const hud = document.getElementById("hud");
+const banner = document.getElementById("banner");
+
+const loadImage = (src) => {
+  const img = new Image();
+  img.src = src;
+  return img;
+};
+const PICTURES = ["dog", "cat", "parrot", "lion", "elephant", "giraffe"].map((name) => loadImage("images/" + name + ".jpg"));
+const GRIDS = [[2, 2], [2, 3], [3, 3], [3, 4]];
+
+let level = 0;
+let cols, rows, image, order, drag, board, won;
+
+function layout() {
+  const width = Math.min(W - 32, (H - 120) * 0.75);
+  board = { x: (W - width) / 2, y: 70, w: width, h: width * (IMAGE_H / IMAGE_W) };
+}
+
+function start() {
+  [cols, rows] = GRIDS[Math.min(level, GRIDS.length - 1)];
+  image = PICTURES[level % PICTURES.length];
+  const solved = Array.from({ length: cols * rows }, (_, i) => i);
+  do { order = shuffle([...solved]); } while (order.every((piece, i) => piece === i));
+  drag = null;
+  won = false;
+  banner.textContent = "";
+  hud.textContent = "Nível " + (level + 1);
+  layout();
+}
+
+const locked = (slot) => order[slot] === slot;
+
+const cellAt = (x, y) => {
+  const col = Math.floor(((x - board.x) / board.w) * cols);
+  const row = Math.floor(((y - board.y) / board.h) * rows);
+  return col < 0 || row < 0 || col >= cols || row >= rows ? -1 : row * cols + col;
+};
+
+function drawPiece(piece, x, y, w, h) {
+  const sw = IMAGE_W / cols;
+  const sh = IMAGE_H / rows;
+  ctx.drawImage(image, (piece % cols) * sw, Math.floor(piece / cols) * sh, sw, sh, x, y, w, h);
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x, y, w, h);
+}
+
+canvas.addEventListener("pointerdown", (event) => {
+  const slot = cellAt(event.clientX, event.clientY);
+  if (won || slot === -1 || locked(slot)) return;
+  drag = { slot, x: event.clientX, y: event.clientY };
+});
+canvas.addEventListener("pointermove", (event) => {
+  if (drag) { drag.x = event.clientX; drag.y = event.clientY; }
+});
+window.addEventListener("pointerup", (event) => {
+  if (!drag) return;
+  const target = cellAt(event.clientX, event.clientY);
+  if (target !== -1 && target !== drag.slot && !locked(target)) {
+    [order[drag.slot], order[target]] = [order[target], order[drag.slot]];
+    beep(500, 0.12);
+    if (order.every((piece, i) => piece === i)) win();
+  }
+  drag = null;
+});
+
+function win() {
+  won = true;
+  banner.textContent = "Parabéns! 💖";
+  speak("Parabéns!");
+  beep(880, 0.4);
+  setTimeout(() => { level++; start(); }, 2800);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  const cw = board.w / cols;
+  const ch = board.h / rows;
+  if (!image.complete) return requestAnimationFrame(draw);
+  order.forEach((piece, slot) => {
+    if (drag && drag.slot === slot) return;
+    const x = board.x + (slot % cols) * cw;
+    const y = board.y + Math.floor(slot / cols) * ch;
+    drawPiece(piece, x, y, cw, ch);
+    if (!won) {
+      const right = locked(slot);
+      ctx.fillStyle = right ? "rgba(80,220,120,.25)" : "rgba(255,60,60,.25)";
+      ctx.fillRect(x, y, cw, ch);
+      ctx.strokeStyle = right ? "#3ddc84" : "#ff3c3c";
+      ctx.lineWidth = 5;
+      ctx.strokeRect(x + 2.5, y + 2.5, cw - 5, ch - 5);
+    }
+  });
+  if (drag) {
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,.4)";
+    ctx.shadowBlur = 16;
+    drawPiece(order[drag.slot], drag.x - cw / 2, drag.y - ch / 2, cw, ch);
+    ctx.restore();
+  }
+  requestAnimationFrame(draw);
+}
+
+window.addEventListener("resize", layout);
+listPhotos().then((photos) => {
+  const mine = photos.filter((photo) => photo.released).map((photo) => loadImage(URL.createObjectURL(photo.blob)));
+  PICTURES.unshift(...mine);
+  start();
+  draw();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ff4fa3">
+<link rel="stylesheet" href="common.css">
+<title>Estrelas</title>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div class="hud" id="hud"></div>
+<a class="back" href="jogos.html">🏠</a>
+<div class="banner" id="banner"></div>
+<script src="common.js"></script>
+<script>
+const canvas = document.getElementById("game");
+const ctx = setupCanvas(canvas);
+const hud = document.getElementById("hud");
+const banner = document.getElementById("banner");
+
+const MAX_LIVES = 3;
+let player, target, stars, clouds, score, lives, safeUntil, over;
+
+const randomPoint = () => ({ x: 40 + Math.random() * (W - 80), y: 100 + Math.random() * (H - 160) });
+
+function spawnCloud() {
+  const angle = Math.random() * Math.PI * 2;
+  const speed = 60 + Math.random() * 50;
+  clouds.push({ ...randomPoint(), vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed });
+}
+
+function start() {
+  player = { x: W / 2, y: H / 2 };
+  target = { ...player };
+  stars = [randomPoint(), randomPoint()];
+  clouds = [];
+  score = 0;
+  lives = MAX_LIVES;
+  safeUntil = 0;
+  over = 0;
+  banner.textContent = "";
+  spawnCloud();
+  updateHud();
+}
+
+function updateHud() {
+  hud.textContent = "⭐ " + score + "  " + "💖".repeat(lives) + "🤍".repeat(MAX_LIVES - lives);
+}
+
+function move(event) {
+  target = { x: event.clientX, y: event.clientY - 60 };
+}
+
+function finish() {
+  over = performance.now();
+  banner.textContent = "Tente de novo! ⭐ " + score;
+  speak("Tente de novo!");
+}
+
+function update(dt) {
+  if (over) return;
+  player.x += (target.x - player.x) * Math.min(dt * 10, 1);
+  player.y += (target.y - player.y) * Math.min(dt * 10, 1);
+
+  stars = stars.filter((star) => {
+    if (Math.hypot(star.x - player.x, star.y - player.y) > 44) return true;
+    score++;
+    beep(600 + (score % 6) * 100, 0.15);
+    if (score % 5 === 0 && clouds.length < 6) spawnCloud();
+    updateHud();
+    return false;
+  });
+  while (stars.length < 3) stars.push(randomPoint());
+
+  const now = performance.now();
+  clouds.forEach((cloud) => {
+    cloud.x += cloud.vx * dt;
+    cloud.y += cloud.vy * dt;
+    if (cloud.x < 40 || cloud.x > W - 40) cloud.vx *= -1;
+    if (cloud.y < 90 || cloud.y > H - 40) cloud.vy *= -1;
+    if (now > safeUntil && Math.hypot(cloud.x - player.x, cloud.y - player.y) < 55) {
+      lives--;
+      safeUntil = now + 1500;
+      beep(180, 0.3);
+      updateHud();
+      if (lives === 0) finish();
+    }
+  });
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "44px system-ui";
+  stars.forEach((star) => ctx.fillText("⭐", star.x, star.y));
+  ctx.font = "72px system-ui";
+  clouds.forEach((cloud) => ctx.fillText("☁️", cloud.x, cloud.y));
+  const blink = performance.now() < safeUntil && Math.floor(performance.now() / 120) % 2 === 0;
+  ctx.globalAlpha = blink ? 0.35 : 1;
+  ctx.font = "56px system-ui";
+  ctx.fillText("🧚", player.x, player.y);
+  ctx.globalAlpha = 1;
+}
+
+let last = performance.now();
+function loop(now) {
+  update(Math.min((now - last) / 1000, 0.05));
+  last = now;
+  draw();
+  requestAnimationFrame(loop);
+}
+
+canvas.addEventListener("pointerdown", (event) => {
+  if (over && performance.now() - over > 500) { start(); return; }
+  move(event);
+});
+canvas.addEventListener("pointermove", move);
+start();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

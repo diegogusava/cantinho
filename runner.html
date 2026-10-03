@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ff4fa3">
+<link rel="stylesheet" href="common.css">
+<title>Corredor</title>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div class="hud" id="hud"></div>
+<a class="back" href="jogos.html">🏠</a>
+<div class="banner" id="banner"></div>
+<script src="common.js"></script>
+<script>
+const canvas = document.getElementById("game");
+const ctx = setupCanvas(canvas);
+const hud = document.getElementById("hud");
+const banner = document.getElementById("banner");
+
+const SIZE = 56;
+let player, obstacles, score, speed, untilSpawn, over, best;
+try { best = Number(localStorage.getItem("runner:best")) || 0; } catch { best = 0; }
+
+const groundY = () => H * 0.75;
+
+function start() {
+  player = { x: W * 0.2, y: groundY(), vy: 0 };
+  obstacles = [];
+  score = 0;
+  speed = W * 0.55;
+  untilSpawn = 1;
+  over = false;
+  banner.textContent = "";
+  hud.textContent = "🌵 0";
+}
+
+function jump() {
+  if (over) {
+    if (performance.now() - over > 500) start();
+    return;
+  }
+  if (player.y >= groundY() - 2) {
+    player.vy = -H * 1.1;
+    beep(520, 0.15);
+  }
+}
+
+function finish() {
+  over = performance.now();
+  if (score > best) {
+    best = score;
+    try { localStorage.setItem("runner:best", best); } catch {}
+  }
+  banner.textContent = "Tente de novo! Recorde: " + best;
+  speak("Tente de novo!");
+}
+
+function update(dt) {
+  if (over) return;
+  player.vy += H * 3.2 * dt;
+  player.y = Math.min(player.y + player.vy * dt, groundY());
+  if (player.y === groundY()) player.vy = 0;
+
+  untilSpawn -= dt;
+  if (untilSpawn <= 0) {
+    obstacles.push({ x: W + SIZE, passed: false });
+    untilSpawn = (0.9 + Math.random() * 1.1) * (W * 0.55 / speed);
+  }
+  obstacles.forEach((o) => { o.x -= speed * dt; });
+  obstacles = obstacles.filter((o) => o.x > -SIZE);
+
+  for (const o of obstacles) {
+    if (!o.passed && o.x < player.x - SIZE / 2) {
+      o.passed = true;
+      score++;
+      speed += 12;
+      hud.textContent = "🌵 " + score;
+      beep(660, 0.1);
+    }
+    const overlapX = Math.abs(o.x - player.x) < SIZE * 0.5;
+    const overlapY = player.y > groundY() - SIZE * 0.7;
+    if (overlapX && overlapY) finish();
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = "#cfeccf";
+  ctx.fillRect(0, groundY(), W, H - groundY());
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
+  ctx.font = SIZE + "px system-ui";
+  ctx.fillText(over ? "😵" : "🐰", player.x, player.y + 6);
+  obstacles.forEach((o) => ctx.fillText("🌵", o.x, groundY() + 6));
+}
+
+let last = performance.now();
+function loop(now) {
+  update(Math.min((now - last) / 1000, 0.05));
+  last = now;
+  draw();
+  requestAnimationFrame(loop);
+}
+
+canvas.addEventListener("pointerdown", jump);
+start();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

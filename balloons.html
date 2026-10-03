@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ff4fa3">
+<link rel="stylesheet" href="common.css">
+<title>Balões</title>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div class="hud" id="hud"></div>
+<a class="back" href="jogos.html">🏠</a>
+<script src="common.js"></script>
+<script>
+const canvas = document.getElementById("game");
+const ctx = setupCanvas(canvas);
+const hud = document.getElementById("hud");
+const COLORS = ["#ff4fa3", "#ffb347", "#4fc3f7", "#81c784", "#ba68c8", "#ffd54f"];
+
+let balloons = [];
+let sparks = [];
+let popped = 0;
+let untilSpawn = 0;
+
+const level = () => 1 + Math.floor(popped / 10);
+
+function spawn() {
+  const radius = 34 + Math.random() * 20;
+  balloons.push({
+    x: radius + Math.random() * (W - 2 * radius),
+    y: H + radius * 2,
+    radius,
+    speed: 60 + level() * 25 + Math.random() * 50,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    phase: Math.random() * 6,
+  });
+}
+
+function pop(balloon) {
+  balloons = balloons.filter((b) => b !== balloon);
+  popped++;
+  hud.textContent = "🎈 " + popped + " · Nível " + level();
+  beep(300 + (popped % 8) * 70, 0.18);
+  if (popped <= 10 || popped % 10 === 0) speak(String(popped));
+  for (let i = 0; i < 12; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 80 + Math.random() * 200;
+    sparks.push({ x: balloon.x, y: balloon.y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 0.5, color: balloon.color });
+  }
+}
+
+canvas.addEventListener("pointerdown", (event) => {
+  const hit = [...balloons].reverse().find((b) => Math.hypot(event.clientX - b.x, (event.clientY - b.y) * 0.85) <= b.radius + 12);
+  if (hit) pop(hit);
+});
+
+function update(dt) {
+  untilSpawn -= dt;
+  if (untilSpawn <= 0) {
+    spawn();
+    untilSpawn = Math.max(0.35, 1.1 - level() * 0.1);
+  }
+  balloons.forEach((b) => { b.y -= b.speed * dt; b.phase += dt * 2; b.x += Math.sin(b.phase) * 20 * dt; });
+  balloons = balloons.filter((b) => b.y > -b.radius * 2);
+  sparks.forEach((s) => { s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt; });
+  sparks = sparks.filter((s) => s.life > 0);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  balloons.forEach((b) => {
+    ctx.strokeStyle = "#999";
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y + b.radius * 1.2);
+    ctx.quadraticCurveTo(b.x + 10, b.y + b.radius * 1.9, b.x, b.y + b.radius * 2.6);
+    ctx.stroke();
+    ctx.fillStyle = b.color;
+    ctx.beginPath();
+    ctx.ellipse(b.x, b.y, b.radius * 0.85, b.radius * 1.15, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.45)";
+    ctx.beginPath();
+    ctx.ellipse(b.x - b.radius * 0.3, b.y - b.radius * 0.4, b.radius * 0.15, b.radius * 0.28, 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  sparks.forEach((s) => {
+    ctx.globalAlpha = Math.max(s.life * 2, 0);
+    ctx.fillStyle = s.color;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, 6, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+}
+
+let last = performance.now();
+function loop(now) {
+  update(Math.min((now - last) / 1000, 0.05));
+  last = now;
+  draw();
+  requestAnimationFrame(loop);
+}
+hud.textContent = "🎈 0 · Nível 1";
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

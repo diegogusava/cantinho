@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ff4fa3">
+<link rel="stylesheet" href="common.css">
+<title>Memória</title>
+<style>
+  #grid { display: grid; gap: 10px; padding: 70px 12px 12px; max-width: 520px; margin: 0 auto; }
+  .card { aspect-ratio: 1; font-size: clamp(2rem, 12vw, 3.4rem); border: 3px solid #ff4fa3; border-radius: 16px; background: #ff4fa3; color: #fff; padding: 0; }
+  .card.up { background: #fff; }
+  .card.done { background: #ffd1e8; border-color: #ffd1e8; }
+</style>
+</head>
+<body>
+<div class="hud" id="hud"></div>
+<a class="back" href="jogos.html">🏠</a>
+<div id="grid"></div>
+<div class="banner" id="banner"></div>
+<script src="common.js"></script>
+<script>
+const EMOJIS = ["🐶", "🐱", "🐭", "🐰", "🦊", "🐻", "🐼", "🐸", "🍎", "🍌", "🍓", "🍇"];
+const PAIRS_PER_LEVEL = [3, 4, 6, 8];
+const grid = document.getElementById("grid");
+const hud = document.getElementById("hud");
+const banner = document.getElementById("banner");
+
+let level = 0;
+let open = [];
+let locked = false;
+let remaining = 0;
+
+function start() {
+  const pairs = PAIRS_PER_LEVEL[Math.min(level, PAIRS_PER_LEVEL.length - 1)];
+  const faces = shuffle([...EMOJIS]).slice(0, pairs);
+  remaining = pairs;
+  open = [];
+  locked = false;
+  banner.textContent = "";
+  hud.textContent = "Nível " + (level + 1);
+  grid.style.gridTemplateColumns = "repeat(" + (pairs === 3 ? 3 : 4) + ", 1fr)";
+  grid.replaceChildren(...shuffle([...faces, ...faces]).map((face) => {
+    const card = document.createElement("button");
+    card.className = "card";
+    card.textContent = "❓";
+    card.onclick = () => flip(card, face);
+    return card;
+  }));
+}
+
+function flip(card, face) {
+  if (locked || open.some((o) => o.card === card) || card.classList.contains("done")) return;
+  card.classList.add("up");
+  card.textContent = face;
+  beep(400 + EMOJIS.indexOf(face) * 40, 0.15);
+  open.push({ card, face });
+  if (open.length < 2) return;
+
+  const [a, b] = open;
+  open = [];
+  if (a.face === b.face) {
+    [a, b].forEach((o) => o.card.classList.add("done"));
+    beep(880, 0.3);
+    if (--remaining === 0) win();
+    return;
+  }
+  locked = true;
+  setTimeout(() => {
+    [a, b].forEach((o) => { o.card.classList.remove("up"); o.card.textContent = "❓"; });
+    locked = false;
+  }, 800);
+}
+
+function win() {
+  banner.textContent = "Parabéns! 💖";
+  speak("Parabéns!");
+  setTimeout(() => { level++; start(); }, 2500);
+}
+
+start();
+</script>
+</body>
+</html>
