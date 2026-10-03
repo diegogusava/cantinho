@@ -37,7 +37,7 @@ function spawn() {
     x: radius + Math.random() * (W - 2 * radius),
     y: H + radius * 2,
     radius,
-    speed: 60 + Math.min(level, 8) * 25 + Math.random() * 50,
+    speed: 60 + Math.min(level, 12) * 25 + Math.random() * 50,
     color: COLORS[Math.floor(Math.random() * COLORS.length)],
     phase: Math.random() * 6,
   });
@@ -80,7 +80,7 @@ function update(dt) {
   untilSpawn -= dt;
   if (untilSpawn <= 0 && !between) {
     spawn();
-    untilSpawn = Math.max(0.35, 1.1 - level * 0.1);
+    untilSpawn = Math.max(0.2, 1.1 - level * 0.1);
   }
   balloons.forEach((b) => { b.y -= b.speed * dt; b.phase += dt * 2; b.x += Math.sin(b.phase) * 20 * dt; });
   balloons = balloons.filter((b) => b.y > -b.radius * 2);

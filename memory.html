@@ -31,7 +31,7 @@
 <script>
 const EMOJIS = ["🐶", "🐱", "🐭", "🐰", "🦊", "🐻", "🐼", "🐸", "🍎", "🍌", "🍓", "🍇", "🦁", "🐯", "🐵", "🐧"];
 const PLAYER_COLORS = ["#ff4fa3", "#2196f3", "#2eb872", "#ff9800"];
-const PAIRS_PER_LEVEL = [3, 4, 6, 8];
+const PAIRS_PER_LEVEL = [3, 4, 6, 8, 10, 12];
 const grid = document.getElementById("grid");
 const hud = document.getElementById("hud");
 const banner = document.getElementById("banner");
@@ -60,7 +60,7 @@ function showHud() {
 }
 
 function start() {
-  const pairs = PAIRS_PER_LEVEL[Math.min(level, PAIRS_PER_LEVEL.length - 1)] + 2 * (scores.length - 1);
+  const pairs = Math.min(EMOJIS.length, PAIRS_PER_LEVEL[Math.min(level, PAIRS_PER_LEVEL.length - 1)] + 2 * (scores.length - 1));
   const faces = shuffle([...EMOJIS]).slice(0, pairs);
   remaining = pairs;
   open = [];
@@ -68,7 +68,7 @@ function start() {
   banner.textContent = "";
   turn = 0;
   showHud();
-  grid.style.gridTemplateColumns = "repeat(" + (pairs === 3 ? 3 : pairs * 2 <= 20 ? 4 : 5) + ", 1fr)";
+  grid.style.gridTemplateColumns = "repeat(" + (pairs === 3 ? 3 : pairs * 2 <= 24 ? 4 : 5) + ", 1fr)";
   grid.replaceChildren(...shuffle([...faces, ...faces]).map((face) => {
     const card = document.createElement("button");
     card.className = "card";

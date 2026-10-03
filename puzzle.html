@@ -27,7 +27,7 @@ const loadImage = (src) => {
   return img;
 };
 const PICTURES = ["dog", "cat", "parrot", "lion", "elephant", "giraffe"].map((name) => loadImage("images/" + name + ".jpg"));
-const GRIDS = [[2, 2], [2, 3], [3, 3], [3, 4]];
+const GRIDS = [[2, 2], [2, 3], [3, 3], [3, 4], [4, 4], [4, 5]];
 
 let level = savedLevel("puzzle", 0);
 let cols, rows, image, order, drag, board, won;
