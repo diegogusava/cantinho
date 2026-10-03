@@ -17,7 +17,7 @@
   #players[hidden] { display: none; }
   #players h1 { color: #ff4fa3; margin: 0 0 8px; }
   #players button { width: min(260px, 80vw); padding: 14px; font-size: 1.6rem; font-weight: 700; border: 3px solid #ff4fa3; border-radius: 16px; background: #fff; color: #ff4fa3; }
-  .card.done { background: #ffd1e8; border-color: #ffd1e8; }
+  .card.done { background: var(--player); border-color: var(--player); }
 </style>
 </head>
 <body>
@@ -89,7 +89,7 @@ function flip(card, face) {
   const [a, b] = open;
   open = [];
   if (a.face === b.face) {
-    [a, b].forEach((o) => o.card.classList.add("done"));
+    [a, b].forEach((o) => { o.card.style.setProperty("--player", PLAYER_COLORS[turn]); o.card.classList.add("done"); });
     beep(880, 0.3);
     scores[turn]++;
     showHud();
