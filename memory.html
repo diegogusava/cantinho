@@ -19,6 +19,7 @@
 <div id="grid"></div>
 <div class="banner" id="banner"></div>
 <script src="common.js"></script>
+<script src="cheer.js"></script>
 <script>
 const EMOJIS = ["🐶", "🐱", "🐭", "🐰", "🦊", "🐻", "🐼", "🐸", "🍎", "🍌", "🍓", "🍇"];
 const PAIRS_PER_LEVEL = [3, 4, 6, 8];
@@ -74,7 +75,7 @@ function flip(card, face) {
 
 function win() {
   banner.textContent = "Parabéns! 💖";
-  speak("Parabéns!");
+  cheer("win");
   setTimeout(() => { level++; start(); }, 2500);
 }
 

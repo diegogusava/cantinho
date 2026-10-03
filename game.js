@@ -45,13 +45,6 @@ function playNote(note, hold) {
   };
 }
 
-function speak(text) {
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "pt-BR";
-  speechSynthesis.cancel();
-  speechSynthesis.speak(utterance);
-}
-
 function buildTiles(song) {
   let previous = -1;
   let start = 0;
@@ -120,7 +113,7 @@ function finish(won) {
   result.textContent = won
     ? `Parabéns, você ganhou! 💖`
     : `Continue tentando! Você consegue! (${hits}/${tiles.length})`;
-  speak(won ? "Parabéns, você ganhou!" : "Continue tentando, você consegue!");
+  cheer(won ? "win" : "retry");
   setTimeout(() => { renderMenu(); menu.hidden = false; }, won ? 4000 : 800);
 }
 

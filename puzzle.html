@@ -13,6 +13,7 @@
 <a class="back" href="index.html">🏠</a>
 <div class="banner" id="banner"></div>
 <script src="common.js"></script>
+<script src="cheer.js"></script>
 <script src="photos.js"></script>
 <script>
 const canvas = document.getElementById("game");
@@ -87,7 +88,7 @@ window.addEventListener("pointerup", (event) => {
 function win() {
   won = true;
   banner.textContent = "Parabéns! 💖";
-  speak("Parabéns!");
+  cheer("win");
   beep(880, 0.4);
   setTimeout(() => { level++; start(); }, 2800);
 }
