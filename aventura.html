@@ -98,6 +98,7 @@ const GRAVITY = 30;
 const RUN = 5;
 const JUMP = 14;
 const MAX_JUMPS = 2;
+const LEDGE = 0.5;
 const SOLID = "#=?";
 const keys = { left: false, right: false, jump: false };
 
@@ -133,6 +134,8 @@ function movePlayer(dt) {
 
   player.x += player.vx * dt;
   for (let r = Math.floor(player.y); r <= Math.floor(player.y + H_ - 0.01); r++) {
+    const wall = Math.floor(player.vx > 0 ? player.x + W_ : player.x);
+    if (player.vx && solid(wall, r) && !solid(wall, r - 1) && player.y + H_ - r < LEDGE) { player.y = r - H_ - 0.001; continue; }
     if (player.vx > 0 && solid(Math.floor(player.x + W_), r)) player.x = Math.floor(player.x + W_) - W_ - 0.001;
     if (player.vx < 0 && solid(Math.floor(player.x), r)) player.x = Math.floor(player.x) + 1.001;
   }
