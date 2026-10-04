@@ -6,11 +6,17 @@
 <meta name="theme-color" content="#ff4fa3">
 <link rel="stylesheet" href="common.css">
 <title>Quebra-cabeça</title>
+<style>
+.picker { position: fixed; inset: 0; z-index: 3; padding: 70px 16px 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; align-content: start; overflow-y: auto; touch-action: pan-y; background: #fff; }
+.picker[hidden] { display: none; }
+.picker img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 16px; border: 4px solid #ff4fa3; }
+</style>
 </head>
 <body>
 <canvas id="game"></canvas>
 <div class="hud" id="hud"></div>
 <a class="back" href="index.html">🏠</a>
+<div class="picker" id="picker"></div>
 <div class="banner" id="banner"></div>
 <script src="common.js"></script>
 <script src="cheer.js"></script>
@@ -20,6 +26,7 @@ const canvas = document.getElementById("game");
 const ctx = setupCanvas(canvas);
 const hud = document.getElementById("hud");
 const banner = document.getElementById("banner");
+const picker = document.getElementById("picker");
 
 const loadImage = (src) => {
   const img = new Image();
@@ -37,15 +44,20 @@ function layout() {
   board = { x: (W - width) / 2, y: 70, w: width, h: width * (IMAGE_H / IMAGE_W) };
 }
 
-function start() {
+function choose() {
+  banner.textContent = "";
+  hud.textContent = "Nível " + (level + 1);
+  picker.hidden = false;
+}
+
+function start(picture) {
   [cols, rows] = GRIDS[Math.min(level, GRIDS.length - 1)];
-  image = PICTURES[level % PICTURES.length];
+  image = picture;
+  picker.hidden = true;
   const solved = Array.from({ length: cols * rows }, (_, i) => i);
   do { order = shuffle([...solved]); } while (order.every((piece, i) => piece === i));
   drag = null;
   won = false;
-  banner.textContent = "";
-  hud.textContent = "Nível " + (level + 1);
   layout();
 }
 
@@ -90,14 +102,14 @@ function win() {
   banner.textContent = "Parabéns! 💖";
   cheer("win");
   beep(880, 0.4);
-  setTimeout(() => { saveLevel("puzzle", ++level); start(); }, 2800);
+  setTimeout(() => { saveLevel("puzzle", ++level); choose(); }, 2800);
 }
 
 function draw() {
   ctx.clearRect(0, 0, W, H);
+  if (!image || !image.complete) return requestAnimationFrame(draw);
   const cw = board.w / cols;
   const ch = board.h / rows;
-  if (!image.complete) return requestAnimationFrame(draw);
   order.forEach((piece, slot) => {
     if (drag && drag.slot === slot) return;
     const x = board.x + (slot % cols) * cw;
@@ -126,7 +138,11 @@ window.addEventListener("resize", layout);
 listPhotos().then((photos) => {
   const mine = photos.filter((photo) => photo.released).map((photo) => loadImage(URL.createObjectURL(photo.blob)));
   PICTURES.unshift(...mine);
-  start();
+  PICTURES.forEach((picture) => {
+    picture.addEventListener("click", () => start(picture));
+    picker.append(picture);
+  });
+  choose();
   draw();
 });
 </script>
