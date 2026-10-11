@@ -1,7 +1,10 @@
-const CACHE = "cantinho-v1";
+const CACHE = "cantinho-v4";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(["./", "index.html", "common.css", "common.js"])));
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll([
+    "./", "index.html", "common.css", "common.js",
+    "pintar.html"
+  ])));
   self.skipWaiting();
 });
 
@@ -17,10 +20,12 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.open(CACHE).then(async (cache) => {
       const cached = await cache.match(event.request);
-      const network = fetch(event.request).then((response) => {
-        if (response.ok) cache.put(event.request, response.clone());
+      const network = fetch(event.request).then(async (response) => {
+        if (response.ok) {
+          try { await cache.put(event.request, response.clone()); } catch {}
+        }
         return response;
-      });
+      }).catch(() => cached || Response.error());
       return cached || network;
     })
   );
