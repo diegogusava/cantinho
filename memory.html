@@ -18,14 +18,20 @@
   #players h1 { color: #ff4fa3; margin: 0 0 8px; }
   #players button { width: min(260px, 80vw); padding: 14px; font-size: 1.6rem; font-weight: 700; border: 3px solid #ff4fa3; border-radius: 16px; background: #fff; color: #ff4fa3; }
   .card.done { background: var(--player); border-color: var(--player); }
+  #players .names { display: flex; flex-direction: column; gap: 10px; }
+  #players input { width: min(260px, 80vw); padding: 10px 12px; font-size: 1.3rem; font-weight: 700; border: 3px solid var(--color); border-radius: 12px; color: var(--color); text-align: center; user-select: text; touch-action: auto; }
+  #players #go { background: #ff4fa3; color: #fff; }
+  #next { white-space: nowrap; position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 8; padding: 14px 32px; font-size: 1.6rem; font-weight: 700; border: 3px solid #fff; border-radius: 16px; background: #ff4fa3; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+  #next[hidden] { display: none; }
 </style>
 </head>
 <body>
 <div class="hud" id="hud"></div>
 <a class="back" href="index.html">🏠</a>
 <div id="grid"></div>
-<div id="players"><h1>Quantos jogadores?</h1></div>
+<div id="players"></div>
 <div class="banner" id="banner"></div>
+<button id="next" hidden>Próximo ▶</button>
 <script src="common.js"></script>
 <script src="cheer.js"></script>
 <script>
@@ -44,19 +50,83 @@ let locked = false;
 let remaining = 0;
 
 const playersMenu = document.getElementById("players");
-[1, 2, 3, 4].forEach((count) => {
-  const button = document.createElement("button");
-  button.textContent = count === 1 ? "1 jogador" : count + " jogadores";
-  button.onclick = () => { scores = Array(count).fill(0); playersMenu.hidden = true; start(); };
-  playersMenu.append(button);
-});
+const nextButton = document.getElementById("next");
+let names = loadNames();
+
+function loadNames() {
+  let stored = [];
+  try { stored = JSON.parse(localStorage.getItem("memory:names")) || []; } catch {}
+  return PLAYER_COLORS.map((_, i) => (typeof stored[i] === "string" && stored[i].trim()) || "J" + (i + 1));
+}
+
+function saveNames() {
+  try { localStorage.setItem("memory:names", JSON.stringify(names)); } catch {}
+}
+
+function heading(text) {
+  return Object.assign(document.createElement("h1"), { textContent: text });
+}
+
+function askCount() {
+  playersMenu.replaceChildren(heading("Quantos jogadores?"));
+  [1, 2, 3, 4].forEach((count) => {
+    const button = document.createElement("button");
+    button.textContent = count === 1 ? "1 jogador" : count + " jogadores";
+    button.onclick = () => askNames(count);
+    playersMenu.append(button);
+  });
+  playersMenu.hidden = false;
+}
+
+function askNames(count) {
+  const list = document.createElement("div");
+  list.className = "names";
+  const inputs = Array.from({ length: count }, (_, i) => {
+    const input = document.createElement("input");
+    input.value = names[i];
+    input.maxLength = 12;
+    input.placeholder = "J" + (i + 1);
+    input.style.setProperty("--color", PLAYER_COLORS[i]);
+    input.onfocus = () => input.select();
+    list.append(input);
+    return input;
+  });
+  const go = document.createElement("button");
+  go.id = "go";
+  go.textContent = "Começar ▶";
+  go.onclick = () => {
+    inputs.forEach((input, i) => { names[i] = input.value.trim() || "J" + (i + 1); });
+    saveNames();
+    scores = Array(count).fill(0);
+    playersMenu.hidden = true;
+    start();
+  };
+  const back = document.createElement("button");
+  back.textContent = "◀ Voltar";
+  back.onclick = askCount;
+  playersMenu.replaceChildren(heading(count === 1 ? "Seu nome" : "Nomes"), list, go, back);
+}
+
+nextButton.onclick = () => {
+  nextButton.hidden = true;
+  saveLevel("memory", ++level);
+  scores = scores.map(() => 0);
+  start();
+};
+
+askCount();
 
 function showHud() {
   document.body.style.setProperty("--player", PLAYER_COLORS[turn]);
-  const status = scores.length === 1
-    ? ""
-    : scores.map((score, i) => '<span class="' + (i === turn ? "now" : "") + '" style="--color:' + PLAYER_COLORS[i] + '">J' + (i + 1) + ": " + score + "</span>").join(" ");
-  hud.innerHTML = "Nível " + (level + 1) + (status && " " + status);
+  hud.replaceChildren("Nível " + (level + 1) + (scores.length === 1 ? " · " + names[0] : ""));
+  if (scores.length === 1) return;
+  scores.forEach((score, i) => {
+    const tag = document.createElement("span");
+    tag.className = i === turn ? "now" : "";
+    tag.style.setProperty("--color", PLAYER_COLORS[i]);
+    tag.textContent = names[i] + ": " + score;
+    hud.append(" ", tag);
+  });
 }
 
 function start() {
@@ -107,10 +177,10 @@ function flip(card, face) {
 
 function win() {
   const best = Math.max(...scores);
-  const winners = scores.flatMap((score, i) => (score === best ? ["J" + (i + 1)] : []));
-  banner.textContent = scores.length === 1 ? "Parabéns! 💖" : winners.length > 1 ? "Empate! 💖" : winners[0] + " ganhou! 💖";
+  const winners = scores.flatMap((score, i) => (score === best ? [names[i]] : []));
+  banner.textContent = scores.length === 1 ? "Parabéns, " + names[0] + "! 💖" : winners.length > 1 ? "Empate! " + winners.join(" e ") + " 💖" : winners[0] + " ganhou! 💖";
   cheer("win");
-  setTimeout(() => { saveLevel("memory", ++level); scores = scores.map(() => 0); start(); }, 2500);
+  setTimeout(() => { nextButton.hidden = false; }, 1000);
 }
 </script>
 </body>
