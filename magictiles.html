@@ -9,7 +9,7 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: #fff; font-family: system-ui, sans-serif; }
   canvas { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; user-select: none; }
-  #menu { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; background: rgba(255, 79, 163, .94); color: #fff; text-align: center; }
+  #menu { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: safe center; gap: 14px; padding: 24px; background: rgba(255, 79, 163, .94); color: #fff; text-align: center; overflow-y: auto; }
   #menu[hidden] { display: none; }
   h1 { margin: 0; font-size: 2.4rem; }
   #result { min-height: 1.5em; font-size: 1.2rem; }
@@ -18,6 +18,7 @@
   button.on { background: #fff; color: #ff4fa3; font-weight: 700; }
   #play { font-size: 1.6rem; padding: 16px 40px; }
   button:disabled { opacity: .5; }
+  #songs { width: min(100%, 520px); max-height: 38vh; overflow-y: auto; }
   #songs button { min-width: 240px; }
   .back { position: absolute; top: 10px; right: 14px; font-size: 2rem; text-decoration: none; }
 </style>

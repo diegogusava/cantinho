@@ -16,7 +16,9 @@ let song = SONGS[0];
 
 const NOTE_SEMITONES = { C: -9, D: -7, E: -5, F: -4, G: -2, A: 0, B: 2 };
 function frequency(note) {
-  const semitones = NOTE_SEMITONES[note[0]] + (Number(note[1]) - 4) * 12;
+  const sharp = note[1] === "#";
+  const octave = Number(note[sharp ? 2 : 1]);
+  const semitones = NOTE_SEMITONES[note[0]] + sharp + (octave - 4) * 12;
   return 440 * 2 ** (semitones / 12);
 }
 
