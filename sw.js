@@ -1,8 +1,8 @@
-const CACHE = "cantinho-v7";
+const CACHE = "cantinho-v11";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll([
-    "./", "index.html", "common.css", "common.js",
+    "./", "index.html", "common.css?v=10", "common.js",
     "pintar.html"
   ])));
   self.skipWaiting();

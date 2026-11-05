@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#ff4fa3">
+<meta name="theme-color" content="#f4a8c8">
 <title>Magic Tiles</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #fff; font-family: system-ui, sans-serif; }
-  canvas { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; user-select: none; }
-  #menu { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: safe center; gap: 14px; padding: 24px; background: rgba(255, 79, 163, .94); color: #fff; text-align: center; overflow-y: auto; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #f4a8c8; font-family: system-ui, sans-serif; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; background: #f4a8c8; touch-action: none; user-select: none; }
+  #menu { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: safe center; gap: 14px; padding: 24px; background: #f4a8c8; color: #3d2c4e; text-align: center; overflow-y: auto; }
   #menu[hidden] { display: none; }
   h1 { margin: 0; font-size: 2.4rem; }
   #result { min-height: 1.5em; font-size: 1.2rem; }
   .row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-  button { font: inherit; font-size: 1.1rem; padding: 12px 18px; border: 3px solid #fff; border-radius: 14px; background: transparent; color: #fff; }
-  button.on { background: #fff; color: #ff4fa3; font-weight: 700; }
+  button { font: inherit; font-size: 1.1rem; font-weight: 700; padding: 12px 18px; border: 0; border-radius: 18px; background: #fff; color: #3d2c4e; box-shadow: 0 4px 0 #de8eb0; }
+  button.on { background: #e8688f; color: #fff; box-shadow: 0 4px 0 #c45a7c; }
   #play { font-size: 1.6rem; padding: 16px 40px; }
   button:disabled { opacity: .5; }
   #songs { width: min(100%, 520px); max-height: 38vh; overflow-y: auto; }
@@ -35,6 +35,6 @@
 </div>
 <script src="cheer.js"></script>
 <script src="songs.js"></script>
-<script src="game.js"></script>
+<script src="game.js?v=11"></script>
 </body>
 </html>

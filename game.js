@@ -185,9 +185,10 @@ function update(dt) {
 }
 
 function draw() {
-  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = "#f4a8c8";
+  ctx.fillRect(0, 0, W, H);
   const colW = W / COLS;
-  ctx.strokeStyle = "#ddd";
+  ctx.strokeStyle = "#de8eb0";
   for (let c = 1; c < COLS; c++) {
     ctx.beginPath();
     ctx.moveTo(c * colW, 0);
@@ -199,7 +200,7 @@ function draw() {
   game.tiles.forEach((tile) => {
     const { top, bottom } = tileBounds(tile);
     if (bottom < 0 || top > VISIBLE_ROWS) return;
-    ctx.fillStyle = tile.missed ? "#ff9a9a" : tile.holding ? "#ff4fa3" : tile.hit ? "#ffd1e8" : "#1a1a1a";
+    ctx.fillStyle = tile.missed ? "#f0a0a8" : tile.holding ? "#e8688f" : tile.hit ? "#f7c2d6" : "#2a2438";
     ctx.fillRect(tile.col * colW + 2, top * rowH + 2, colW - 4, tile.rows * rowH - 4);
   });
 
@@ -218,7 +219,7 @@ function draw() {
     ctx.font = "800 44px system-ui";
     ctx.lineWidth = 8;
     ctx.strokeStyle = "#fff";
-    ctx.fillStyle = "#ff4fa3";
+    ctx.fillStyle = "#e8688f";
     ["Parabéns,", "você ganhou!"].forEach((line, i) => {
       const y = H / 2 + (i - 0.5) * 56;
       ctx.strokeText(line, W / 2, y);
@@ -229,7 +230,7 @@ function draw() {
     ctx.textBaseline = "alphabetic";
   }
 
-  ctx.fillStyle = "#ff4fa3";
+  ctx.fillStyle = "#3d2c4e";
   ctx.font = "700 32px system-ui";
   ctx.textAlign = "center";
   ctx.fillText(game.hits, W / 2, 48);

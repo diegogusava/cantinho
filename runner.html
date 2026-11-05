@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#ff4fa3">
-<link rel="stylesheet" href="common.css">
+<meta name="theme-color" content="#f4a8c8">
+<link rel="stylesheet" href="common.css?v=10">
 <title>Corredor</title>
 <style>
   .banner { white-space: pre-line; }
-  #levels { position: fixed; inset: 0; z-index: 7; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+  #levels { position: fixed; inset: 0; z-index: 7; background: #f4a8c8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
   #levels[hidden] { display: none; }
-  #levels h1 { color: #ff4fa3; margin: 0 0 8px; }
-  #levels button { width: min(260px, 80vw); padding: 14px; font-size: 1.6rem; font-weight: 700; border: 3px solid #ff4fa3; border-radius: 16px; background: #fff; color: #ff4fa3; }
+  #levels h1 { color: #3d2c4e; margin: 0 0 8px; }
+  #levels button { width: min(260px, 80vw); padding: 14px; font-size: 1.6rem; font-weight: 700; border: 0; border-radius: 18px; background: #fff; color: #3d2c4e; box-shadow: 0 4px 0 #de8eb0; }
 </style>
 </head>
 <body>
@@ -128,7 +128,7 @@ function update(dt) {
 
 function draw() {
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = "hsl(" + ((level() - 1) * 47 + 330) % 360 + " 85% 94%)";
+  ctx.fillStyle = "hsl(" + ((level() - 1) * 47 + 338) % 360 + " 62% 86%)";
   ctx.fillRect(0, 0, W, groundY());
   ctx.fillStyle = "#cfeccf";
   ctx.fillRect(0, groundY(), W, H - groundY());

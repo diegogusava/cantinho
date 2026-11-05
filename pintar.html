@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#ff4fa3">
+  <meta name="theme-color" content="#f4a8c8">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; font-family: system-ui, sans-serif; user-select: none; }
 :root {
-  --pink: #ff4fa3;
-  --blush: #fff0f6;
-  --ink: #58334b;
+  --pink: #e8688f;
+  --blush: #f4a8c8;
+  --ink: #3d2c4e;
   --teal: #2bbbc7;
   --yellow: #ffca55;
 }
@@ -25,7 +25,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 button:disabled { opacity: .45; cursor: default; }
 .paint-header { max-width: 960px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 h1, h2 { font-family: "Trebuchet MS", system-ui, sans-serif; }
-h1 { font-size: clamp(1.4rem, 5vw, 2rem); margin: 0; color: #bc266d; }
+h1 { font-size: clamp(1.4rem, 5vw, 2rem); margin: 0; color: #3d2c4e; }
 h2 { font-size: clamp(1.2rem, 4vw, 1.6rem); margin: 0; }
 .home-link { display: flex; align-items: center; gap: 6px; min-height: 48px; padding: 8px; color: var(--ink); text-decoration: none; font-weight: 700; }
 .home-link span { font-size: .9rem; }
@@ -33,7 +33,7 @@ main { max-width: 960px; margin: auto; }
 .picker { text-align: center; padding-top: 12px; }
 .picker p { margin: 10px 0 22px; }
 .pictures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(12px, 4vw, 26px); max-width: 640px; margin: auto; }
-.picture { border: 3px solid var(--pink); border-radius: 24px; background: #fff; padding: 10px; box-shadow: 0 6px 0 #f8c4db; overflow: hidden; transition: transform .15s; }
+.picture { border: 0; border-radius: 24px; background: #fff; padding: 10px; box-shadow: 0 6px 0 #de8eb0; overflow: hidden; transition: transform .15s; }
 .picture:hover { transform: translateY(-3px); }
 .picture img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 4; object-fit: contain; border-radius: 14px; }
 .picture span { display: block; font-family: "Trebuchet MS", system-ui, sans-serif; font-size: 1.4rem; font-weight: 700; padding: 12px 0 6px; }
@@ -41,7 +41,7 @@ main { max-width: 960px; margin: auto; }
 .studio-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .instruction { margin: 14px 0; text-align: center; }
 .workspace { display: flex; justify-content: center; align-items: flex-start; gap: 28px; }
-.paper { position: relative; width: min(100%, 480px, 50svh); aspect-ratio: 3 / 4; flex-shrink: 0; background: white; border: 3px solid #f8c4db; border-radius: 16px; overflow: hidden; box-shadow: 0 6px 0 #f8c4db; }
+.paper { position: relative; width: min(100%, 480px, 50svh); aspect-ratio: 3 / 4; flex-shrink: 0; background: white; border: 0; border-radius: 16px; overflow: hidden; box-shadow: 0 6px 0 #de8eb0; }
 #painting { position: static; display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; transform-origin: 0 0; }
 .loading { position: absolute; inset: 0; margin: 0; display: grid; place-content: center; background: #ffffffed; text-align: center; padding: 16px; }
 .paint-controls { max-width: 300px; width: 100%; padding: 16px; background: white; border-radius: 20px; }
@@ -49,7 +49,7 @@ main { max-width: 960px; margin: auto; }
 .swatch { position: relative; width: 100%; min-width: 32px; height: 46px; border: 3px solid transparent; border-radius: 10px 10px 17px 17px; background: var(--color); box-shadow: inset 0 -10px 0 #00000012; }
 .swatch[aria-pressed="true"] { border-color: var(--ink); outline: 2px solid #fff; outline-offset: -5px; }
 .swatch[aria-pressed="true"]::after { content: "✓"; font-size: 1.15rem; font-weight: 900; color: white; text-shadow: 0 1px 3px #000, 0 0 3px #000; }
-.button { min-height: 46px; border: 2px solid #f8c4db; background: white; border-radius: 14px; padding: 10px 12px; font-weight: 650; }
+.button { min-height: 46px; border: 2px solid #de8eb0; background: white; border-radius: 14px; padding: 10px 12px; font-weight: 650; }
 .button:hover:not(:disabled) { background: var(--blush); }
 .button[aria-pressed="true"] { background: var(--blush); border-color: var(--pink); }
 .tools { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -62,7 +62,7 @@ main { max-width: 960px; margin: auto; }
 .credits { margin: 18px auto 0; text-align: center; font-size: .75rem; }
 .credits a { color: var(--ink); display: inline-block; padding: 8px 4px; }
 dialog { width: min(90vw, 420px); border: 3px solid var(--pink); border-radius: 22px; padding: 24px; color: var(--ink); }
-dialog::backdrop { background: #58334b80; }
+dialog::backdrop { background: #3d2c4e80; }
 dialog form { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
 @media (max-width: 650px) {
   .paint-header { margin-bottom: 12px; }
@@ -172,7 +172,7 @@ dialog form { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
   const barriers = new Uint8Array(width * height);
   const pictures = { barbie: "Barbie", peppa: "Peppa Pig", bluey: "Bluey", bingo: "Bingo", olaf: "Olaf" };
   const colors = [
-    ["Rosa", "#ff4fa3"], ["Vermelho", "#ef4444"], ["Laranja", "#fb923c"],
+    ["Rosa", "#e8688f"], ["Vermelho", "#ef4444"], ["Laranja", "#fb923c"],
     ["Amarelo", "#ffca55"], ["Verde", "#55c878"], ["Azul-claro", "#69d6ef"],
     ["Azul", "#497be8"], ["Roxo", "#a477da"], ["Cor de pêssego", "#ffd1b3"],
     ["Marrom", "#aa7350"], ["Preto", "#333333"], ["Branco", "#ffffff"]

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#ff4fa3">
-<link rel="stylesheet" href="common.css">
+<meta name="theme-color" content="#f4a8c8">
+<link rel="stylesheet" href="common.css?v=10">
 <title>Balões</title>
 </head>
 <body>
@@ -20,7 +20,7 @@ const ctx = setupCanvas(canvas);
 const hud = document.getElementById("hud");
 const banner = document.getElementById("banner");
 const GOAL = 10;
-const COLORS = ["#ff4fa3", "#ffb347", "#4fc3f7", "#81c784", "#ba68c8", "#ffd54f"];
+const COLORS = ["#e8688f", "#ffb347", "#5b6cff", "#12b5a0", "#b07cff", "#f5a524"];
 
 let balloons = [];
 let sparks = [];
@@ -91,7 +91,7 @@ function update(dt) {
 function draw() {
   ctx.clearRect(0, 0, W, H);
   balloons.forEach((b) => {
-    ctx.strokeStyle = "#999";
+    ctx.strokeStyle = "#8b7a9e";
     ctx.beginPath();
     ctx.moveTo(b.x, b.y + b.radius * 1.2);
     ctx.quadraticCurveTo(b.x + 10, b.y + b.radius * 1.9, b.x, b.y + b.radius * 2.6);
