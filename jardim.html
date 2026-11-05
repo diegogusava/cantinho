@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#f4a8c8">
+<link rel="stylesheet" href="common.css?v=10">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+<title>Jardim</title>
+<style>
+  .hud { right: 58px; }
+  .banner { align-items: flex-end; padding: 0 20px 11%; font-size: 1.55rem; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div class="hud" id="hud"></div>
+<a class="back" href="index.html">🏠</a>
+<div class="banner" id="banner">Pegue as estrelas!</div>
+<script src="common.js"></script>
+<script src="cheer.js"></script>
+<script type="module">
+import * as THREE from "three";
+
+const ISLAND_R = 6.2;
+const BUNNY_R = 0.48;
+const SPEED = 2.8;
+const MAX_LIVES = 3;
+const BEE_Y = 1.05;
+let hint = "Pegue as estrelas!";
+const UP = new THREE.Vector3(0, 1, 0);
+const KEYS = {
+  ArrowUp: "forward", KeyW: "forward",
+  ArrowDown: "back", KeyS: "back",
+  ArrowLeft: "left", KeyA: "left",
+  ArrowRight: "right", KeyD: "right",
+};
+
+const canvas = document.getElementById("game");
+const hud = document.getElementById("hud");
+const banner = document.getElementById("banner");
+
+const SKY = 0xf7d0e4;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.setClearColor(SKY, 1);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(SKY);
+
+const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 80);
+const clock = { time: 0 };
+const raycaster = new THREE.Raycaster();
+const groundPlane = new THREE.Plane(UP, 0);
+const ndc = new THREE.Vector2();
+const hitPoint = new THREE.Vector3();
+const fwd = new THREE.Vector3();
+const right = new THREE.Vector3();
+const steer = new THREE.Vector3();
+const target = new THREE.Vector3();
+
+const keys = { forward: false, back: false, left: false, right: false };
+let keySteer = false;
+let dragging = false;
+let celebrate = false;
+let testing = false;
+let hopTime = 0;
+let level = savedLevel("garden", 0);
+let total = 0;
+let lives = MAX_LIVES;
+let safeUntil = 0;
+let stungAt = -10;
+let grace = true;
+let starSpeed = 0.85;
+
+scene.add(new THREE.HemisphereLight(0xfff6fa, 0x8ed18a, 0.9));
+const sun = new THREE.DirectionalLight(0xfff7ee, 1.2);
+sun.position.set(-5, 12, 7);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+sun.shadow.camera.left = -9;
+sun.shadow.camera.right = 9;
+sun.shadow.camera.top = 9;
+sun.shadow.camera.bottom = -9;
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far = 28;
+scene.add(sun);
+
+const fur = new THREE.MeshStandardMaterial({ color: 0xfffaf6, roughness: 0.72 });
+const pink = new THREE.MeshStandardMaterial({ color: 0xf4a0b8, roughness: 0.6 });
+const ink = new THREE.MeshStandardMaterial({ color: 0x3d2c4e, roughness: 0.4 });
+const noseMat = new THREE.MeshStandardMaterial({ color: 0xe8688f, roughness: 0.45 });
+const grassMat = new THREE.MeshStandardMaterial({ color: 0x8ed18a, roughness: 0.95 });
+const sandMat = new THREE.MeshStandardMaterial({ color: 0xf3d7b0, roughness: 1 });
+const waterMat = new THREE.MeshStandardMaterial({ color: 0xb7e4f8, roughness: 0.35 });
+const deepMat = new THREE.MeshStandardMaterial({ color: 0x8ecfee, roughness: 0.4 });
+const bushMat = new THREE.MeshStandardMaterial({ color: 0x5cba63, roughness: 0.85 });
+const leafMat = new THREE.MeshStandardMaterial({ color: 0x8ed18a, roughness: 0.8 });
+const starMat = new THREE.MeshStandardMaterial({ color: 0xffd15c, emissive: 0xffb703, emissiveIntensity: 0.45, roughness: 0.35 });
+const petalMat = new THREE.MeshStandardMaterial({ color: 0xfff6fb, roughness: 0.7 });
+const petalPink = new THREE.MeshStandardMaterial({ color: 0xf7b7d0, roughness: 0.7 });
+const cloudMat = new THREE.MeshBasicMaterial({ color: 0xfffafc });
+const beeBody = new THREE.MeshBasicMaterial({ color: 0xffcc33 });
+const beeDark = new THREE.MeshBasicMaterial({ color: 0x2a2038 });
+const wingMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75, side: THREE.DoubleSide });
+const blobMat = new THREE.MeshBasicMaterial({ color: 0x3d2c4e, transparent: true, opacity: 0.16, depthWrite: false });
+
+function disc(radius, material, y) {
+  const item = new THREE.Mesh(new THREE.CircleGeometry(radius, 56), material);
+  item.rotation.x = -Math.PI / 2;
+  item.position.y = y;
+  item.receiveShadow = true;
+  scene.add(item);
+  return item;
+}
+
+disc(22, deepMat, -0.5);
+disc(13, waterMat, -0.4);
+
+const beach = new THREE.Mesh(new THREE.CylinderGeometry(ISLAND_R + 0.55, ISLAND_R + 0.85, 0.28, 56), sandMat);
+beach.position.y = -0.22;
+beach.receiveShadow = true;
+scene.add(beach);
+
+const grass = new THREE.Mesh(new THREE.CylinderGeometry(ISLAND_R, ISLAND_R - 0.1, 0.46, 56), grassMat);
+grass.position.y = -0.23;
+grass.receiveShadow = true;
+scene.add(grass);
+
+const bunny = new THREE.Group();
+scene.add(bunny);
+
+function part(geometry, material, x, y, z, name) {
+  const item = new THREE.Mesh(geometry, material);
+  item.position.set(x, y, z);
+  item.castShadow = true;
+  item.receiveShadow = true;
+  if (name) item.name = name;
+  bunny.add(item);
+  return item;
+}
+
+part(new THREE.SphereGeometry(0.36, 24, 16), fur, 0, 0.5, 0);
+part(new THREE.SphereGeometry(0.28, 24, 16), fur, 0, 0.96, -0.06);
+part(new THREE.SphereGeometry(0.07, 12, 10), noseMat, 0, 0.9, -0.32, "nose");
+part(new THREE.SphereGeometry(0.11, 12, 10), fur, 0, 0.46, 0.34, "tail");
+part(new THREE.SphereGeometry(0.11, 12, 10), fur, -0.14, 0.12, 0.02);
+part(new THREE.SphereGeometry(0.11, 12, 10), fur, 0.14, 0.12, 0.02);
+part(new THREE.SphereGeometry(0.055, 10, 8), ink, -0.1, 1.02, -0.26);
+part(new THREE.SphereGeometry(0.055, 10, 8), ink, 0.1, 1.02, -0.26);
+part(new THREE.SphereGeometry(0.07, 10, 8), pink, -0.16, 0.88, -0.2);
+part(new THREE.SphereGeometry(0.07, 10, 8), pink, 0.16, 0.88, -0.2);
+
+const leftEar = part(new THREE.SphereGeometry(0.11, 14, 10), fur, -0.14, 1.28, -0.08);
+leftEar.scale.set(0.72, 1.85, 0.55);
+leftEar.rotation.z = 0.35;
+const rightEar = part(new THREE.SphereGeometry(0.11, 14, 10), fur, 0.14, 1.28, -0.08);
+rightEar.scale.set(0.72, 1.85, 0.55);
+rightEar.rotation.z = -0.35;
+const leftInner = part(new THREE.SphereGeometry(0.06, 10, 8), pink, -0.14, 1.3, -0.12);
+leftInner.scale.set(0.6, 1.5, 0.4);
+leftInner.rotation.z = 0.35;
+const rightInner = part(new THREE.SphereGeometry(0.06, 10, 8), pink, 0.14, 1.3, -0.12);
+rightInner.scale.set(0.6, 1.5, 0.4);
+rightInner.rotation.z = -0.35;
+
+const blob = new THREE.Mesh(new THREE.CircleGeometry(0.42, 20), blobMat);
+blob.rotation.x = -Math.PI / 2;
+blob.position.y = 0.03;
+scene.add(blob);
+
+const bushes = [];
+const stars = [];
+const bees = [];
+const clouds = [];
+
+function flower(x, z, color) {
+  const group = new THREE.Group();
+  group.position.set(x, 0, z);
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.28, 6), leafMat);
+  stem.position.y = 0.14;
+  group.add(stem);
+  for (let petal = 0; petal < 5; petal++) {
+    const angle = petal / 5 * Math.PI * 2;
+    const bit = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), color);
+    bit.position.set(Math.cos(angle) * 0.1, 0.32, Math.sin(angle) * 0.1);
+    group.add(bit);
+  }
+  const center = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), starMat);
+  center.position.y = 0.32;
+  group.add(center);
+  scene.add(group);
+}
+
+for (let n = 0; n < 7; n++) {
+  const angle = n / 7 * Math.PI * 2 + 0.4;
+  flower(Math.cos(angle) * 5.15, Math.sin(angle) * 5.15, n % 2 ? petalPink : petalMat);
+}
+
+for (let n = 0; n < 3; n++) {
+  const cloud = new THREE.Group();
+  cloud.position.set(-8 + n * 7, 4.2 + (n % 2) * 0.6, -4 - n);
+  cloud.userData.speed = 0.25 + n * 0.08;
+  for (const [x, y, s] of [[0, 0, 0.55], [0.5, 0.1, 0.4], [-0.45, 0.05, 0.36]]) {
+    const puff = new THREE.Mesh(new THREE.SphereGeometry(s, 12, 8), cloudMat);
+    puff.position.set(x, y, 0);
+    cloud.add(puff);
+  }
+  scene.add(cloud);
+  clouds.push(cloud);
+}
+
+function face(dirX, dirZ) {
+  bunny.rotation.y = Math.atan2(-dirX, -dirZ);
+}
+
+function showHud() {
+  const full = Math.max(0, Math.min(lives, MAX_LIVES));
+  const hearts = "💖".repeat(full) + "🤍".repeat(MAX_LIVES - full);
+  hud.textContent = "Nível " + (level + 1) + " · ⭐ " + (total - stars.length) + "/" + total + "  " + hearts;
+}
+
+function discard(list) {
+  for (const item of list) {
+    scene.remove(item);
+    item.traverse((child) => child.geometry?.dispose());
+  }
+  list.length = 0;
+}
+
+function clearLevel() {
+  discard(bushes);
+  discard(stars);
+  discard(bees);
+}
+
+function beeCountFor() {
+  if (level < 2) return 0;
+  if (level < 4) return 1;
+  if (level < 6) return 2;
+  return 3;
+}
+
+function paceFor() {
+  const rank = Math.max(0, level - 2);
+  return Math.min(2.05 + rank * 0.05, 2.5);
+}
+
+function showHint() {
+  const count = beeCountFor();
+  hint = count === 0 ? "Pegue as estrelas!" : count === 1 ? "Fuja da abelha!" : "Fuja das abelhas!";
+  banner.textContent = hint;
+}
+
+function makeBee(x, z) {
+  const bee = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.38, 16, 12), beeBody);
+  body.scale.set(0.75, 0.62, 1.25);
+  body.castShadow = true;
+  bee.add(body);
+  for (const z of [-0.12, 0.18]) {
+    const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.1, 14), beeDark);
+    stripe.rotation.x = Math.PI / 2;
+    stripe.position.z = z;
+    bee.add(stripe);
+  }
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 8), beeBody);
+  head.position.set(0, 0.02, -0.4);
+  head.castShadow = true;
+  bee.add(head);
+  const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), beeDark);
+  eyeL.position.set(-0.07, 0.06, -0.54);
+  bee.add(eyeL);
+  const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), beeDark);
+  eyeR.position.set(0.07, 0.06, -0.54);
+  bee.add(eyeR);
+  const wingL = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), wingMat);
+  wingL.scale.set(1.6, 0.16, 0.9);
+  wingL.position.set(-0.32, 0.2, 0);
+  bee.add(wingL);
+  const wingR = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), wingMat);
+  wingR.scale.set(1.6, 0.16, 0.9);
+  wingR.position.set(0.32, 0.2, 0);
+  bee.add(wingR);
+  const dx = -x;
+  const dz = 1.8 - z;
+  const dist = Math.hypot(dx, dz) || 1;
+  const pace = paceFor();
+  bee.position.set(x, BEE_Y, z);
+  bee.userData.slot = bees.length;
+  bee.userData.vx = dx / dist * pace;
+  bee.userData.vz = dz / dist * pace;
+  bee.rotation.y = Math.atan2(-bee.userData.vx, -bee.userData.vz);
+  bee.userData.phase = Math.random() * Math.PI * 2;
+  bee.userData.wingL = wingL;
+  bee.userData.wingR = wingR;
+  scene.add(bee);
+  bees.push(bee);
+}
+
+function spot(taken, minR, maxR, gap) {
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const angle = Math.random() * Math.PI * 2;
+    const radius = minR + Math.random() * (maxR - minR);
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    const clear = taken.every((item) => Math.hypot(item.x - x, item.z - z) > item.gap + gap);
+    if (clear) return { x, z };
+  }
+  return null;
+}
+
+function placeLevel() {
+  clearLevel();
+  celebrate = false;
+  lives = MAX_LIVES;
+  grace = true;
+  stungAt = -10;
+  const beeCount = beeCountFor();
+  safeUntil = clock.time + (beeCount === 1 ? 2.8 : 1.7);
+  bunny.visible = true;
+  starSpeed = Math.min(0.62 + level * 0.1, 1.25);
+  bunny.position.set(0, 0, 1.8);
+  target.set(0, 0, 1.8);
+  face(0, 1);
+  hopTime = 0;
+  const taken = [{ x: 0, z: 1.8, gap: 1.3 }];
+  const starCount = Math.min(3 + level, 8);
+  const bushCount = Math.min(level, 6);
+  for (let n = 0; n < bushCount; n++) {
+    const place = spot(taken, 1.6, ISLAND_R - 1.3, 1.35);
+    if (!place) break;
+    const radius = 0.48;
+    const bush = new THREE.Mesh(new THREE.SphereGeometry(radius, 18, 14), n % 2 ? bushMat : leafMat);
+    bush.position.set(place.x, radius * 0.72, place.z);
+    bush.castShadow = true;
+    bush.receiveShadow = true;
+    bush.userData.radius = radius;
+    scene.add(bush);
+    bushes.push(bush);
+    taken.push({ x: place.x, z: place.z, gap: radius + 0.4 });
+  }
+  for (let n = 0; n < starCount; n++) {
+    const place = spot(taken, 1.2, ISLAND_R - 1.1, 1.15);
+    if (!place) break;
+    const star = new THREE.Mesh(new THREE.OctahedronGeometry(0.34, 0), starMat);
+    star.position.set(place.x, 0.9, place.z);
+    const drift = Math.random() * Math.PI * 2;
+    star.userData.phase = drift;
+    star.userData.vx = Math.cos(drift) * starSpeed;
+    star.userData.vz = Math.sin(drift) * starSpeed;
+    star.castShadow = true;
+    scene.add(star);
+    stars.push(star);
+    taken.push({ x: place.x, z: place.z, gap: 1.15 });
+  }
+  const beeSpots = [
+    { x: -1.8, z: -3.2 },
+    { x: 2.4, z: -2.2 },
+    { x: -2.6, z: -0.4 },
+  ];
+  for (let n = 0; n < beeCount; n++) makeBee(beeSpots[n].x, beeSpots[n].z);
+  total = stars.length;
+  showHud();
+  showHint();
+  followCamera();
+}
+
+function separate() {
+  for (const bush of bushes) {
+    if (testing) break;
+    const dx = bunny.position.x - bush.position.x;
+    const dz = bunny.position.z - bush.position.z;
+    const dist = Math.hypot(dx, dz);
+    const min = BUNNY_R + bush.userData.radius;
+    if (dist === 0) {
+      bunny.position.x += min;
+      continue;
+    }
+    if (dist < min) {
+      bunny.position.x += dx / dist * (min - dist);
+      bunny.position.z += dz / dist * (min - dist);
+    }
+  }
+  const reach = ISLAND_R - BUNNY_R;
+  const dist = Math.hypot(bunny.position.x, bunny.position.z);
+  if (dist > reach) {
+    bunny.position.x *= reach / dist;
+    bunny.position.z *= reach / dist;
+  }
+}
+
+function followCamera() {
+  camera.position.set(bunny.position.x, bunny.position.y + 7.4, bunny.position.z + 8.4);
+  camera.lookAt(bunny.position.x, bunny.position.y + 2.6, bunny.position.z);
+}
+
+function collectStars() {
+  if (testing) return;
+  for (let i = stars.length - 1; i >= 0; i--) {
+    const star = stars[i];
+    const dx = star.position.x - bunny.position.x;
+    const dz = star.position.z - bunny.position.z;
+    if (dx * dx + dz * dz > 0.7 * 0.7) continue;
+    scene.remove(star);
+    stars.splice(i, 1);
+    beep(880, 0.12);
+    showHud();
+  }
+  if (total > 0 && stars.length === 0 && !celebrate) {
+    celebrate = true;
+    banner.textContent = "Mandou bem!";
+    cheer("win");
+    level += 1;
+    saveLevel("garden", level);
+    setTimeout(() => {
+      banner.textContent = "";
+      placeLevel();
+    }, 1500);
+  }
+}
+
+function keepOnIsland(item, reach) {
+  const flat = Math.hypot(item.position.x, item.position.z);
+  if (flat <= reach) return false;
+  item.position.x *= reach / flat;
+  item.position.z *= reach / flat;
+  return true;
+}
+
+function driftStars(dt) {
+  const reach = ISLAND_R - 1.05;
+  for (const star of stars) {
+    star.position.x += star.userData.vx * dt;
+    star.position.z += star.userData.vz * dt;
+    if (keepOnIsland(star, reach)) {
+      const nx = star.position.x / reach;
+      const nz = star.position.z / reach;
+      const dot = star.userData.vx * nx + star.userData.vz * nz;
+      star.userData.vx -= 2 * dot * nx;
+      star.userData.vz -= 2 * dot * nz;
+    }
+    for (const bush of bushes) {
+      const dx = star.position.x - bush.position.x;
+      const dz = star.position.z - bush.position.z;
+      const dist = Math.hypot(dx, dz);
+      const min = bush.userData.radius + 0.5;
+      if (dist >= min || dist === 0) continue;
+      star.position.x += dx / dist * (min - dist);
+      star.position.z += dz / dist * (min - dist);
+      star.userData.vx = dx / dist * starSpeed;
+      star.userData.vz = dz / dist * starSpeed;
+    }
+  }
+}
+
+function flapBee(bee) {
+  bee.position.y = BEE_Y + Math.sin(clock.time * 7 + bee.userData.phase) * 0.1;
+  const flap = Math.sin(clock.time * 32 + bee.userData.phase);
+  bee.userData.wingL.rotation.z = flap * 0.7;
+  bee.userData.wingR.rotation.z = -flap * 0.7;
+}
+
+function moveBees(dt) {
+  if (grace && clock.time >= safeUntil) grace = false;
+  const blend = 1 - Math.exp(-1.8 * dt);
+  for (const bee of bees) {
+    if (grace) {
+      flapBee(bee);
+      continue;
+    }
+    const dx = bunny.position.x - bee.position.x;
+    const dz = bunny.position.z - bee.position.z;
+    const dist = Math.hypot(dx, dz) || 1;
+    const side = bee.userData.slot - (bees.length - 1) / 2;
+    const flank = side * 1.35;
+    const ax = dx - dz / dist * flank;
+    const az = dz + dx / dist * flank;
+    const ad = Math.hypot(ax, az) || 1;
+    const pace = paceFor();
+    bee.userData.vx += (ax / ad * pace - bee.userData.vx) * blend;
+    bee.userData.vz += (az / ad * pace - bee.userData.vz) * blend;
+    const mag = Math.hypot(bee.userData.vx, bee.userData.vz) || 1;
+    if (mag > pace) {
+      bee.userData.vx *= pace / mag;
+      bee.userData.vz *= pace / mag;
+    }
+    bee.position.x += bee.userData.vx * dt;
+    bee.position.z += bee.userData.vz * dt;
+    if (keepOnIsland(bee, ISLAND_R - 0.7)) {
+      bee.userData.vx *= -0.4;
+      bee.userData.vz *= -0.4;
+    }
+    if (mag > 0.05) bee.rotation.y = Math.atan2(-bee.userData.vx, -bee.userData.vz);
+    flapBee(bee);
+    if (testing || celebrate || lives <= 0 || clock.time < safeUntil) continue;
+    if (dx * dx + dz * dz > 0.95 * 0.95) continue;
+    lives -= 1;
+    stungAt = clock.time;
+    safeUntil = clock.time + 1.5;
+    bee.userData.vx = -dx / dist * 4.2;
+    bee.userData.vz = -dz / dist * 4.2;
+    bee.position.x -= dx / dist * 1.1;
+    bee.position.z -= dz / dist * 1.1;
+    showHud();
+    if (lives > 0) {
+      beep(160, 0.18);
+      continue;
+    }
+    celebrate = true;
+    banner.textContent = "Tente de novo";
+    cheer("retry");
+    setTimeout(() => {
+      banner.textContent = "";
+      placeLevel();
+    }, 1300);
+  }
+  if (!grace) separateBees();
+}
+
+function separateBees() {
+  const gap = 1.45;
+  for (let i = 0; i < bees.length; i++) {
+    for (let j = i + 1; j < bees.length; j++) {
+      const a = bees[i];
+      const b = bees[j];
+      let dx = b.position.x - a.position.x;
+      let dz = b.position.z - a.position.z;
+      let dist = Math.hypot(dx, dz);
+      if (dist >= gap) continue;
+      if (dist < 0.001) {
+        dx = 1;
+        dz = 0;
+        dist = 1;
+      }
+      const push = (gap - dist) / 2;
+      a.position.x -= dx / dist * push;
+      a.position.z -= dz / dist * push;
+      b.position.x += dx / dist * push;
+      b.position.z += dz / dist * push;
+    }
+  }
+  for (const bee of bees) keepOnIsland(bee, ISLAND_R - 0.7);
+}
+
+function update(dt) {
+  clock.time += dt;
+  if (!celebrate) {
+    steer.set(0, 0, 0);
+    if (keySteer) {
+      camera.getWorldDirection(fwd);
+      fwd.y = 0;
+      if (fwd.lengthSq() > 0) fwd.normalize();
+      right.crossVectors(fwd, UP);
+      if (keys.forward) steer.add(fwd);
+      if (keys.back) steer.addScaledVector(fwd, -1);
+      if (keys.right) steer.add(right);
+      if (keys.left) steer.addScaledVector(right, -1);
+      if (steer.lengthSq() > 0) {
+        steer.normalize();
+        target.set(bunny.position.x, 0, bunny.position.z).addScaledVector(steer, 0.7);
+      }
+    }
+    const dx = target.x - bunny.position.x;
+    const dz = target.z - bunny.position.z;
+    const dist = Math.hypot(dx, dz);
+    const previousX = bunny.position.x;
+    const previousZ = bunny.position.z;
+    if (dist > 0.08) {
+      const step = Math.min(SPEED * dt, dist);
+      bunny.position.x += dx / dist * step;
+      bunny.position.z += dz / dist * step;
+      separate();
+      const moved = Math.hypot(bunny.position.x - previousX, bunny.position.z - previousZ);
+      if (moved < 0.002) target.set(bunny.position.x, 0, bunny.position.z);
+      else face(dx, dz);
+      hopTime += dt * 12;
+      bunny.position.y = Math.abs(Math.sin(hopTime)) * 0.16;
+    } else {
+      hopTime = 0;
+      bunny.position.y = 0;
+    }
+    collectStars();
+    moveBees(dt);
+  }
+  if (!testing) driftStars(dt);
+  const blinking = clock.time - stungAt < 1.5;
+  bunny.visible = testing || !blinking || Math.sin(clock.time * 28) > 0;
+  for (const star of stars) {
+    star.position.y = 0.9 + Math.sin(clock.time * 3 + star.userData.phase) * 0.1;
+    star.rotation.y += dt * 1.6;
+  }
+  for (const cloud of clouds) {
+    cloud.position.x += cloud.userData.speed * dt;
+    if (cloud.position.x > 12) cloud.position.x = -12;
+  }
+  blob.position.x = bunny.position.x;
+  blob.position.z = bunny.position.z;
+  followCamera();
+}
+
+function aim(event) {
+  const rect = canvas.getBoundingClientRect();
+  ndc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  ndc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(ndc, camera);
+  if (!raycaster.ray.intersectPlane(groundPlane, hitPoint)) return;
+  const reach = ISLAND_R - BUNNY_R;
+  const flat = Math.hypot(hitPoint.x, hitPoint.z);
+  if (flat > reach) {
+    hitPoint.x *= reach / flat;
+    hitPoint.z *= reach / flat;
+  }
+  target.set(hitPoint.x, 0, hitPoint.z);
+  keySteer = false;
+}
+
+canvas.addEventListener("pointerdown", (event) => {
+  if (celebrate) return;
+  dragging = true;
+  canvas.setPointerCapture(event.pointerId);
+  if (banner.textContent === hint) banner.textContent = "";
+  aim(event);
+});
+canvas.addEventListener("pointermove", (event) => {
+  if (dragging && !celebrate) aim(event);
+});
+canvas.addEventListener("pointerup", () => { dragging = false; });
+canvas.addEventListener("pointercancel", () => { dragging = false; });
+
+window.addEventListener("keydown", (event) => {
+  const name = KEYS[event.code];
+  if (!name || celebrate) return;
+  event.preventDefault();
+  keys[name] = true;
+  keySteer = true;
+  dragging = false;
+  if (banner.textContent === hint) banner.textContent = "";
+});
+window.addEventListener("keyup", (event) => {
+  const name = KEYS[event.code];
+  if (!name) return;
+  keys[name] = false;
+  if (!keys.forward && !keys.back && !keys.left && !keys.right) {
+    keySteer = false;
+    target.set(bunny.position.x, 0, bunny.position.z);
+  }
+});
+
+window.addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+function selfTest() {
+  const failures = [];
+  const saved = bunny.position.clone();
+  const savedTarget = target.clone();
+  const savedYaw = bunny.rotation.y;
+  testing = true;
+  celebrate = false;
+  const facing = () => new THREE.Vector3(0, 0, -1).applyQuaternion(bunny.quaternion);
+  const modelFront = () => {
+    const tail = new THREE.Vector3();
+    const nose = new THREE.Vector3();
+    bunny.getObjectByName("tail").getWorldPosition(tail);
+    bunny.getObjectByName("nose").getWorldPosition(nose);
+    return nose.sub(tail).setY(0).normalize();
+  };
+  const run = (seconds) => {
+    for (let step = 0; step < Math.round(seconds / 0.016); step++) update(0.016);
+  };
+  for (const [name, axis, sign] of [["right", "r", 1], ["left", "r", -1], ["forward", "f", 1], ["back", "f", -1]]) {
+    bunny.position.set(0, 0, 0);
+    target.set(0, 0, 0);
+    followCamera();
+    camera.updateMatrixWorld();
+    const flat = new THREE.Vector3();
+    camera.getWorldDirection(flat);
+    flat.y = 0;
+    flat.normalize();
+    const side = new THREE.Vector3().crossVectors(flat, UP);
+    const basis = { f: flat, r: side };
+    keys[name] = true;
+    keySteer = true;
+    run(0.5);
+    keys[name] = false;
+    keySteer = false;
+    const delta = bunny.position.clone();
+    delta.y = 0;
+    if (delta.length() < 0.05) {
+      failures.push(name + " did not move");
+      continue;
+    }
+    const direction = delta.clone().normalize();
+    const along = direction.dot(basis[axis]) * sign;
+    if (along < 0.9) failures.push(name + " moved the wrong way " + along.toFixed(2));
+    if (facing().dot(direction) < 0.9) failures.push(name + " faces " + facing().dot(direction).toFixed(2));
+    if (modelFront().dot(facing()) < 0.9) failures.push(name + " model front " + modelFront().dot(facing()).toFixed(2));
+  }
+  testing = false;
+  bunny.visible = true;
+  bunny.position.copy(saved);
+  bunny.position.y = 0;
+  bunny.rotation.y = savedYaw;
+  target.copy(savedTarget);
+  followCamera();
+  return failures;
+}
+
+window.__jardim = { selfTest, bunny, stars, bees, update, get lives() { return lives; } };
+
+placeLevel();
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min((now - last) / 1000, 0.05);
+  last = now;
+  update(dt);
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
