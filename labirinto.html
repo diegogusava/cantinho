@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#f4a8c8">
+<link rel="stylesheet" href="common.css?v=10">
+<title>Labirinto da princesa</title>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+<style>
+  body { color: #3d2c4e; display: flex; flex-direction: column; height: 100svh; }
+  .top { display: flex; align-items: center; justify-content: space-between; padding: max(12px, env(safe-area-inset-top)) 18px 4px; gap: 12px; }
+  h1 { font-size: clamp(1.15rem, 4vw, 1.6rem); margin: 0; }
+  .top p { margin: 3px 0 0; font-size: .95rem; }
+  .top-actions { display: flex; gap: 8px; align-items: center; }
+  button, .home { font: inherit; color: inherit; border: 0; cursor: pointer; touch-action: none; }
+  .icon-button, .home { width: 48px; height: 48px; border-radius: 16px; background: #fff5fa; display: grid; place-items: center; font-size: 1.5rem; text-decoration: none; }
+  button:focus-visible, a:focus-visible { outline: 3px solid #673779; outline-offset: 3px; }
+  button:hover, .home:hover { background: #fff; }
+  button:disabled { opacity: .5; cursor: default; }
+  #view { position: relative; flex: 1; min-height: 0; }
+  #game { position: absolute; width: 100%; height: 100%; display: block; }
+  #hint { text-align: center; margin: 0; padding: 4px 12px; font-size: 1rem; min-height: 32px; }
+  .controls { display: grid; grid-template-columns: repeat(3, 58px); grid-template-rows: repeat(2, 54px); gap: 7px; justify-content: center; padding: 4px 12px max(14px, env(safe-area-inset-bottom)); }
+  .direction { border-radius: 16px; background: #fff5fa; font-size: 1.7rem; box-shadow: 0 3px 0 #d580a7; }
+  .direction:active, .direction.held { background: #673779; color: #fff; transform: translateY(2px); box-shadow: none; }
+  [data-direction="up"] { grid-column: 2; }
+  [data-direction="left"] { grid-row: 2; grid-column: 1; }
+  [data-direction="down"] { grid-row: 2; grid-column: 2; }
+  [data-direction="right"] { grid-row: 2; grid-column: 3; }
+  .overlay { position: fixed; inset: 0; z-index: 8; display: grid; place-items: center; padding: 20px; background: #f4a8c8bb; }
+  [hidden] { display: none !important; }
+  .panel { max-width: 390px; width: 100%; text-align: center; background: #fff8fc; border-radius: 24px; padding: 30px 24px; box-shadow: 0 14px 42px #79345126; }
+  .panel h2 { margin: 0 0 12px; font-size: 1.9rem; }
+  .panel p { line-height: 1.5; margin: 0 0 22px; font-size: 1.1rem; }
+  .primary { background: #673779; color: white; padding: 15px 24px; border-radius: 16px; font-weight: 750; min-width: 160px; }
+  .primary:hover { background: #512760; }
+  .panel .home-link { display: block; color: #673779; margin-top: 20px; }
+  @media (orientation: landscape) and (max-height: 540px) {
+    .top { padding-top: max(6px, env(safe-area-inset-top)); }
+    .top p { display: none; }
+    #view { margin-right: 190px; }
+    #hint { position: absolute; right: 8px; top: 80px; width: 175px; font-size: .95rem; }
+    .controls { position: absolute; right: max(10px, env(safe-area-inset-right)); bottom: 10px; grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(2, 50px); padding: 0; }
+    .panel { padding: 20px; } .panel p { margin-bottom: 14px; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <div><h1>Labirinto da princesa</h1><p id="level">Fase 1 · Encontre o castelo</p></div>
+  <div class="top-actions"><button id="pause" class="icon-button" aria-label="Pausar" disabled>Ⅱ</button><a class="home" href="index.html" aria-label="Voltar ao início">🏠</a></div>
+</header>
+<main id="view"><canvas id="game" role="img" aria-label="Labirinto 3D: leve a princesa ao castelo e fuja do monstrinho."></canvas></main>
+<p id="hint" role="status">Preparando o jardim…</p>
+<nav class="controls" aria-label="Mover a princesa">
+  <button class="direction" data-direction="up" aria-label="Ir para cima" disabled>↑</button>
+  <button class="direction" data-direction="left" aria-label="Ir para a esquerda" disabled>←</button>
+  <button class="direction" data-direction="down" aria-label="Ir para baixo" disabled>↓</button>
+  <button class="direction" data-direction="right" aria-label="Ir para a direita" disabled>→</button>
+</nav>
+<section id="overlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="message-title" aria-describedby="message-text">
+  <div class="panel">
+    <h2 id="message-title">Um passeio real</h2>
+    <p id="message-text">Ajude a princesa a chegar ao castelo antes do monstrinho! Segure as setas para andar.</p>
+    <button id="action" class="primary" disabled>Preparando…</button>
+    <a class="home-link" href="index.html">Voltar ao início</a>
+  </div>
+</section>
+<script src="common.js"></script>
+<script type="module">
+  import('./labirinto.js').catch(() => {
+    document.getElementById('overlay').hidden = false;
+    document.getElementById('message-title').textContent = 'O jardim não abriu';
+    document.getElementById('message-text').textContent = 'Não foi possível carregar o jogo 3D. Tente abrir de novo em um navegador atualizado.';
+    const action = document.getElementById('action');
+    action.textContent = 'Tentar de novo';
+    action.disabled = false;
+    action.onclick = () => location.reload();
+  });
+</script>
+</body>
+</html>
