@@ -20,6 +20,124 @@ with sync_playwright() as p:
     page = context.new_page()
     errors = []
     page.on('pageerror', lambda error: errors.append(str(error)))
+    # Real touchscreen events exercise camera projection, corners, walls and cleanup.
+    touch_page = context.new_page()
+    touch_page.on('pageerror', lambda error: errors.append(str(error)))
+    touch_page.goto(URL + '/labirinto.html')
+    touch_page.get_by_role('button', name='Jogar', exact=True).click()
+    # Keep the monster asleep while checking input behavior in isolation.
+    touch_page.evaluate("async () => { (await import('./labirinto.js')).round.headStart = 1000; }")
+    cdp = context.new_cdp_session(touch_page)
+
+    def cell():
+        return touch_page.evaluate("async () => { const a=(await import('./labirinto.js')).round.princess;return {x:a.x,z:a.z}; }")
+
+    def screen(point):
+        return touch_page.evaluate("""async p => {
+          const m=await import('./labirinto.js'),{Vector3}=await import('three');
+          const offset=(m.maze.size-1)/2;
+          const projected=new Vector3(p.x-offset,.08,p.z-offset).project(m.camera);
+          const rect=document.querySelector('canvas').getBoundingClientRect();
+          return {x:rect.left+(projected.x+1)*rect.width/2,
+                  y:rect.top+(1-projected.y)*rect.height/2};
+        }""", point)
+
+    def touch(kind, point=None):
+        points = [] if point is None else [{**screen(point), 'id': 1}]
+        cdp.send('Input.dispatchTouchEvent', {'type': kind, 'touchPoints': points})
+
+    def wait_at(point):
+        touch_page.wait_for_function("""async p => {
+          const a=(await import('./labirinto.js')).round.princess;
+          return Math.hypot(a.x-p.x,a.z-p.z)<.03;
+        }""", arg=point)
+
+    route = touch_page.evaluate("""async () => {
+      const {maze}=await import('./labirinto.js'),{findPath}=await import('./labirinto-maze.js');
+      const path=findPath(maze,maze.start,maze.exit);
+      for(let i=2;i<path.length;i++) {
+        if(path[i].x-path[i-1].x!==path[i-1].x-path[i-2].x ||
+           path[i].z-path[i-1].z!==path[i-1].z-path[i-2].z) return path.slice(0,i+2);
+      }
+      throw Error('Expected an escape route with a corner');
+    }""")
+    touch('touchStart', route[0])
+    assert touch_page.locator('canvas').evaluate("c=>c.classList.contains('dragging')")
+    for point in route[1:]:
+        touch('touchMove', point)
+        wait_at(point)
+    touch('touchEnd')
+    touch_page.wait_for_timeout(350)
+    stopped = cell()
+    touch_page.wait_for_timeout(150)
+    assert cell() == stopped, 'finger release left movement held'
+
+    wall = touch_page.evaluate("""async () => {
+      const {round,maze}=await import('./labirinto.js'),{isOpen}=await import('./labirinto-maze.js');
+      const a=round.princess.cell;
+      return [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}].map(d=>({x:a.x+d.x,z:a.z+d.z})).find(p=>!isOpen(maze,p));
+    }""")
+    touch('touchStart', stopped)
+    touch('touchMove', wall)
+    touch_page.wait_for_timeout(350)
+    assert cell() == stopped, 'drag crossed a wall or moved along a stale direction'
+    touch('touchEnd')
+
+    def open_neighbor():
+        return touch_page.evaluate("""async () => {
+          const {round,maze}=await import('./labirinto.js'),{isOpen}=await import('./labirinto-maze.js');
+          const a=round.princess.cell;
+          return [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}].map(d=>({x:a.x+d.x,z:a.z+d.z})).find(p=>isOpen(maze,p));
+        }""")
+
+    touch('touchStart', cell())
+    touch('touchMove', open_neighbor())
+    touch_page.wait_for_timeout(90)
+    touch('touchCancel')
+    touch_page.wait_for_timeout(350)
+    stopped = cell()
+    touch_page.wait_for_timeout(150)
+    assert cell() == stopped
+    assert not touch_page.locator('canvas').evaluate("c=>c.classList.contains('dragging')")
+
+    touch('touchStart', cell())
+    touch('touchMove', open_neighbor())
+    touch_page.evaluate("window.dispatchEvent(new Event('blur'))")
+    frozen = cell()
+    touch_page.wait_for_timeout(180)
+    assert cell() == frozen
+    touch('touchEnd')
+    touch_page.get_by_role('button', name='Continuar', exact=True).click()
+    touch_page.wait_for_timeout(350)
+    stopped = cell()
+    touch_page.wait_for_timeout(150)
+    assert cell() == stopped, 'resume restored a stale drag'
+
+    touch('touchStart', cell())
+    touch('touchMove', open_neighbor())
+    touch_page.set_viewport_size({'width':844,'height':390})
+    touch_page.wait_for_timeout(350)
+    stopped = cell()
+    touch_page.wait_for_timeout(150)
+    assert cell() == stopped, 'rotation left a drag held'
+    touch('touchEnd')
+    # A second finger, including on the arrows, must not replace the active drag.
+    stopped = cell()
+    touch('touchStart', stopped)
+    primary = {**screen(stopped), 'id': 1}
+    arrow = touch_page.locator('[data-direction="up"]').bounding_box()
+    extra = {'x':arrow['x']+20,'y':arrow['y']+20,'id':2}
+    cdp.send('Input.dispatchTouchEvent', {'type':'touchStart','touchPoints':[primary,extra]})
+    touch_page.wait_for_timeout(180)
+    assert cell() == stopped
+    assert not touch_page.locator('.direction.held').count()
+    cdp.send('Input.dispatchTouchEvent', {'type':'touchEnd','touchPoints':[extra]})
+    touch_page.wait_for_timeout(180)
+    assert cell() == stopped, 'second finger started movement after releasing the drag'
+    touch('touchEnd')
+    touch_page.screenshot(path='/tmp/maze-finger-controls.png')
+    touch_page.close()
+    print('PASS: real touchscreen corridor movement, corner, wall, release, cancel, pause/resume, resize and extra fingers')
     page.goto(URL + '/index.html')
     page.get_by_role('link', name='👑 Labirinto da princesa').click()
     page.get_by_role('button', name='Jogar', exact=True).click()

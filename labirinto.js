@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { generateMaze, createRound, stepRound } from './labirinto-maze.js';
+import { generateMaze, createRound, stepRound, isOpen } from './labirinto-maze.js';
 
 const canvas = document.getElementById('game');
 const view = document.getElementById('view');
@@ -120,8 +120,45 @@ let lastTime = 0;
 let displayedHint = '';
 const inputs = new Map();
 let audioEnabled = false;
+let drag = null;
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.08);
+const touchPoint = new THREE.Vector3();
+
+function clearDrag() {
+  if (!drag) return;
+  const id = drag.id;
+  drag = null;
+  canvas.classList.remove('dragging');
+  if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id);
+}
+
+function pointOnBoard(event) {
+  const rect = canvas.getBoundingClientRect();
+  pointer.set((event.clientX - rect.left) / rect.width * 2 - 1,
+    1 - (event.clientY - rect.top) / rect.height * 2);
+  raycaster.setFromCamera(pointer, camera);
+  if (!raycaster.ray.intersectPlane(ground, touchPoint)) return null;
+  const offset = (maze.size - 1) / 2;
+  return { x: touchPoint.x + offset, z: touchPoint.z + offset };
+}
+
+function dragDirection() {
+  const cell = round.princess.target || round.princess.cell;
+  const dx = drag.point.x - cell.x;
+  const dz = drag.point.z - cell.z;
+  const options = [
+    { name: dx > 0 ? 'right' : 'left', distance: Math.abs(dx), x: Math.sign(dx), z: 0 },
+    { name: dz > 0 ? 'down' : 'up', distance: Math.abs(dz), x: 0, z: Math.sign(dz) },
+  ].sort((a, b) => b.distance - a.distance);
+  // Only neighboring corridors count. The player must trace the turns.
+  return options.find((d) => d.distance > 0.4 &&
+    isOpen(maze, { x: cell.x + d.x, z: cell.z + d.z }))?.name;
+}
 
 function clearInput() {
+  clearDrag();
   inputs.clear();
   for (const button of buttons) button.classList.remove('held');
 }
@@ -173,6 +210,7 @@ function pause() {
 }
 
 function resize() {
+  clearDrag();
   const width = view.clientWidth;
   const height = Math.max(1, view.clientHeight);
   renderer.setSize(width, height, false);
@@ -266,7 +304,7 @@ function frame(time) {
   const dt = Math.min((time - lastTime) / 1000, 0.05);
   lastTime = time;
   if (state === 'playing') {
-    stepRound(round, dt, [...inputs.values()].at(-1));
+    stepRound(round, dt, drag ? dragDirection() : [...inputs.values()].at(-1));
     const text = round.elapsed < round.headStart
       ? 'Vamos! O monstrinho ainda está dormindo…'
       : 'Fuja do monstrinho e chegue ao castelo!';
@@ -287,6 +325,29 @@ function frame(time) {
   renderer.render(scene, camera);
 }
 
+canvas.addEventListener('pointerdown', (event) => {
+  if (state !== 'playing' || drag || event.button !== 0) return;
+  const point = pointOnBoard(event);
+  if (!point || point.x < -0.5 || point.z < -0.5 ||
+      point.x > maze.size - 0.5 || point.z > maze.size - 0.5) return;
+  event.preventDefault();
+  clearInput();
+  drag = { id: event.pointerId, point };
+  canvas.setPointerCapture(event.pointerId);
+  canvas.classList.add('dragging');
+});
+canvas.addEventListener('pointermove', (event) => {
+  if (!drag || drag.id !== event.pointerId) return;
+  event.preventDefault();
+  const point = pointOnBoard(event);
+  if (point) drag.point = point;
+});
+for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+  canvas.addEventListener(type, (event) => {
+    if (drag?.id === event.pointerId) clearDrag();
+  });
+}
+
 const keyDirections = {
   ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down',
   ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
@@ -302,7 +363,7 @@ window.addEventListener('keyup', (event) => inputs.delete(event.code));
 for (const button of buttons) {
   button.addEventListener('pointerdown', (event) => {
     event.preventDefault();
-    if (state !== 'playing') return;
+    if (state !== 'playing' || drag) return;
     button.setPointerCapture(event.pointerId);
     inputs.set(`pointer:${event.pointerId}`, button.dataset.direction);
     button.classList.add('held');
@@ -337,6 +398,6 @@ canvas.addEventListener('webglcontextlost', (event) => {
 new ResizeObserver(resize).observe(view);
 buildBoard();
 action.disabled = false;
-showPanel('Um passeio real', 'Ajude a princesa a chegar ao castelo antes do monstrinho! Segure as setas para andar. No teclado, use as setas ou WASD.', 'Jogar');
-hint.textContent = 'Leve a princesa ao castelo';
+showPanel('Um passeio real', 'Arraste o dedo pelos caminhos para levar a princesa ao castelo. Levante o dedo para parar. Você também pode usar as setas ou WASD.', 'Jogar');
+hint.textContent = 'Arraste o dedo pelos caminhos até o castelo';
 requestAnimationFrame(frame);
