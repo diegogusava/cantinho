@@ -1,9 +1,42 @@
 let audio;
 let W, H;
 
+function resumeAudio() {
+  try {
+    if (navigator.audioSession) navigator.audioSession.type = "playback";
+  } catch {}
+  if (!audio || audio.state === "closed") {
+    audio = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audio.state !== "running") audio.resume().catch(() => {});
+}
+
+function unlockAudio(event) {
+  if (event.target.closest?.('input, textarea, [contenteditable="true"]')) return;
+  resumeAudio();
+  // Start the output inside the gesture, including games that beep in a frame.
+  const source = audio.createBufferSource();
+  source.buffer = audio.createBuffer(1, 1, audio.sampleRate);
+  source.connect(audio.destination);
+  source.start();
+}
+
+document.addEventListener("pointerdown", unlockAudio, true);
+document.addEventListener("keydown", unlockAudio, true);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && audio) resumeAudio();
+});
+window.addEventListener("pageshow", () => {
+  if (audio) resumeAudio();
+});
+for (const type of ["contextmenu", "selectstart"]) {
+  document.addEventListener(type, (event) => {
+    if (event.target.closest?.("canvas, button, .card")) event.preventDefault();
+  });
+}
+
 function beep(frequency, duration = 0.25) {
-  audio ||= new (window.AudioContext || window.webkitAudioContext)();
-  audio.resume();
+  resumeAudio();
   const now = audio.currentTime;
   const osc = audio.createOscillator();
   const gain = audio.createGain();

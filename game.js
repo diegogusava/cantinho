@@ -15,6 +15,21 @@ let game = null;
 let song = SONGS[0];
 
 const NOTE_SEMITONES = { C: -9, D: -7, E: -5, F: -4, G: -2, A: 0, B: 2 };
+function resumeAudio() {
+  // Audio session support is optional and must not prevent notes from playing.
+  try {
+    if (navigator.audioSession) navigator.audioSession.type = "playback";
+  } catch {}
+  if (!audio || audio.state === "closed") {
+    audio = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audio.state !== "running") {
+    audio.resume().catch(() => {
+      // Retry on the next tap if the browser still requires user activation.
+    });
+  }
+}
+
 function frequency(note) {
   const sharp = note[1] === "#";
   const octave = Number(note[sharp ? 2 : 1]);
@@ -23,6 +38,8 @@ function frequency(note) {
 }
 
 function playNote(note, hold) {
+  resumeAudio();
+  const noteAudio = audio;
   const now = audio.currentTime;
   const osc = audio.createOscillator();
   const gain = audio.createGain();
@@ -39,7 +56,7 @@ function playNote(note, hold) {
   }
   gain.gain.exponentialRampToValueAtTime(0.35, now + 0.1);
   return () => {
-    const end = audio.currentTime;
+    const end = noteAudio.currentTime;
     gain.gain.cancelScheduledValues(end);
     gain.gain.setValueAtTime(0.35, end);
     gain.gain.exponentialRampToValueAtTime(0.0001, end + 0.2);
@@ -69,9 +86,12 @@ function writeStars(song, value) {
 }
 
 function start() {
-  if (navigator.audioSession) navigator.audioSession.type = "playback";
-  audio ||= new (window.AudioContext || window.webkitAudioContext)();
-  audio.resume();
+  resumeAudio();
+  // Unlock the output during the start gesture, before the first tile is hit.
+  const unlock = audio.createBufferSource();
+  unlock.buffer = audio.createBuffer(1, 1, audio.sampleRate);
+  unlock.connect(audio.destination);
+  unlock.start();
   game = {
     tiles: buildTiles(song),
     scroll: START_SCROLL,
@@ -140,7 +160,10 @@ function endHold(tile) {
 }
 
 function onTap(event) {
+  event.preventDefault();
   if (!game || game.over) return;
+  resumeAudio();
+  canvas.setPointerCapture(event.pointerId);
   const col = Math.floor(event.clientX / (W / COLS));
   const row = event.clientY / rowH;
   const tile = game.tiles.find((candidate) => {
@@ -288,8 +311,16 @@ function renderMenu() {
 
 window.addEventListener("resize", resize);
 canvas.addEventListener("pointerdown", onTap);
+canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+canvas.addEventListener("selectstart", (event) => event.preventDefault());
 window.addEventListener("pointerup", onRelease);
 window.addEventListener("pointercancel", onRelease);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && audio) resumeAudio();
+});
+window.addEventListener("pageshow", () => {
+  if (audio) resumeAudio();
+});
 resize();
 renderMenu();
 requestAnimationFrame(loop);
