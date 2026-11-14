@@ -10,8 +10,8 @@
 </script>
 <title>Jardim</title>
 <style>
-  .hud { right: 58px; }
-  .banner { align-items: flex-end; padding: 0 20px 11%; font-size: 1.55rem; }
+  .hud { right: 58px; white-space: pre-line; font-size: clamp(1.05rem, 4.6vw, 1.6rem); }
+  .banner { color: #3d2c4e; align-items: flex-end; padding: 0 20px 11%; font-size: 1.55rem; }
 </style>
 </head>
 <body>
@@ -27,6 +27,9 @@ import * as THREE from "three";
 const ISLAND_R = 6.2;
 const BUNNY_R = 0.48;
 const SPEED = 2.8;
+const BOOST_MULTIPLIER = 1.6;
+const BOOST_SECONDS = 6;
+const CARROT_COOLDOWN = 8;
 const MAX_LIVES = 3;
 const BEE_Y = 1.05;
 let hint = "Pegue as estrelas!";
@@ -78,6 +81,9 @@ let safeUntil = 0;
 let stungAt = -10;
 let grace = true;
 let starSpeed = 0.85;
+let boostUntil = 0;
+let nextCarrotAt = 0;
+let boostLabel = 0;
 
 scene.add(new THREE.HemisphereLight(0xfff6fa, 0x8ed18a, 0.9));
 const sun = new THREE.DirectionalLight(0xfff7ee, 1.2);
@@ -216,6 +222,72 @@ for (let n = 0; n < 3; n++) {
   clouds.push(cloud);
 }
 
+const carrot = new THREE.Group();
+const carrotGold = new THREE.MeshStandardMaterial({ color: 0xffbd36, emissive: 0xe69313, emissiveIntensity: 0.35, roughness: 0.55 });
+const carrotBody = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.65, 16), carrotGold);
+carrotBody.rotation.z = Math.PI;
+carrotBody.castShadow = true;
+carrot.add(carrotBody);
+for (let i = -1; i <= 1; i++) {
+  const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), bushMat);
+  leaf.scale.set(0.65, 2.1, 0.65);
+  leaf.rotation.z = i * -0.5;
+  leaf.position.set(i * 0.09, 0.43, 0);
+  carrot.add(leaf);
+}
+const carrotRing = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.035, 8, 32), starMat);
+carrotRing.rotation.x = Math.PI / 2;
+carrotRing.position.y = -0.12;
+carrot.add(carrotRing);
+carrot.visible = false;
+scene.add(carrot);
+
+function spawnCarrot() {
+  const taken = [
+    { x: bunny.position.x, z: bunny.position.z, gap: 0.5 },
+    ...bushes.map((bush) => ({ x: bush.position.x, z: bush.position.z, gap: bush.userData.radius })),
+    ...stars.map((star) => ({ x: star.position.x, z: star.position.z, gap: 0.2 })),
+  ];
+  let place = spot(taken, 1.4, ISLAND_R - 1, 0.85);
+  // A regular sweep still finds clear ground when random attempts repeat.
+  for (let radius = 1.4; !place && radius <= ISLAND_R - 1; radius += 0.6) {
+    for (let i = 0; i < 32; i++) {
+      const x = Math.cos(i / 32 * Math.PI * 2) * radius;
+      const z = Math.sin(i / 32 * Math.PI * 2) * radius;
+      if (taken.every((item) => Math.hypot(item.x - x, item.z - z) > item.gap + 0.85)) {
+        place = { x, z };
+        break;
+      }
+    }
+  }
+  if (!place) {
+    nextCarrotAt = clock.time + 1;
+    return;
+  }
+  carrot.position.set(place.x, 0.9, place.z);
+  carrot.visible = true;
+}
+
+function updatePowerUp() {
+  if (carrot.visible) {
+    carrot.position.y = 0.9 + Math.sin(clock.time * 3) * 0.1;
+    carrot.rotation.y = clock.time * 1.8;
+    if (Math.hypot(carrot.position.x - bunny.position.x, carrot.position.z - bunny.position.z) < 0.8) {
+      carrot.visible = false;
+      boostUntil = clock.time + BOOST_SECONDS;
+      nextCarrotAt = boostUntil + CARROT_COOLDOWN;
+      beep(1047, 0.18);
+    }
+  } else if (clock.time >= nextCarrotAt && clock.time >= boostUntil) {
+    spawnCarrot();
+  }
+  const remaining = Math.max(0, Math.ceil(boostUntil - clock.time));
+  if (remaining !== boostLabel) {
+    boostLabel = remaining;
+    showHud();
+  }
+}
+
 function face(dirX, dirZ) {
   bunny.rotation.y = Math.atan2(-dirX, -dirZ);
 }
@@ -223,7 +295,9 @@ function face(dirX, dirZ) {
 function showHud() {
   const full = Math.max(0, Math.min(lives, MAX_LIVES));
   const hearts = "💖".repeat(full) + "🤍".repeat(MAX_LIVES - full);
-  hud.textContent = "Nível " + (level + 1) + " · ⭐ " + (total - stars.length) + "/" + total + "  " + hearts;
+  const remaining = Math.max(0, Math.ceil(boostUntil - clock.time));
+  hud.textContent = "Nível " + (level + 1) + " · ⭐ " + (total - stars.length) + "/" + total + "  " + hearts
+    + (remaining ? "\n⚡ Corrida rápida: " + remaining + "s" : "");
 }
 
 function discard(list) {
@@ -238,12 +312,15 @@ function clearLevel() {
   discard(bushes);
   discard(stars);
   discard(bees);
+  carrot.visible = false;
+  boostUntil = 0;
+  nextCarrotAt = 0;
+  boostLabel = 0;
 }
 
 function beeCountFor() {
-  if (level < 2) return 0;
-  if (level < 4) return 1;
-  if (level < 6) return 2;
+  if (level < 10) return 1;
+  if (level < 20) return 2;
   return 3;
 }
 
@@ -254,7 +331,8 @@ function paceFor() {
 
 function showHint() {
   const count = beeCountFor();
-  hint = count === 0 ? "Pegue as estrelas!" : count === 1 ? "Fuja da abelha!" : "Fuja das abelhas!";
+  hint = (count === 1 ? "Fuja da abelha!" : "Fuja das abelhas!")
+    + " Pegue a cenoura dourada para correr mais!";
   banner.textContent = hint;
 }
 
@@ -367,6 +445,7 @@ function placeLevel() {
   ];
   for (let n = 0; n < beeCount; n++) makeBee(beeSpots[n].x, beeSpots[n].z);
   total = stars.length;
+  spawnCarrot();
   showHud();
   showHint();
   followCamera();
@@ -552,6 +631,7 @@ function separateBees() {
 function update(dt) {
   clock.time += dt;
   if (!celebrate) {
+    if (!testing) updatePowerUp();
     steer.set(0, 0, 0);
     if (keySteer) {
       camera.getWorldDirection(fwd);
@@ -573,7 +653,8 @@ function update(dt) {
     const previousX = bunny.position.x;
     const previousZ = bunny.position.z;
     if (dist > 0.08) {
-      const step = Math.min(SPEED * dt, dist);
+      const speed = SPEED * (clock.time < boostUntil ? BOOST_MULTIPLIER : 1);
+      const step = Math.min(speed * dt, dist);
       bunny.position.x += dx / dist * step;
       bunny.position.z += dz / dist * step;
       separate();
