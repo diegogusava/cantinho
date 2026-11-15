@@ -14,10 +14,51 @@ with sync_playwright() as p:
     page.goto('http://127.0.0.1:8087/aventura.html')
     page.evaluate('''() => {
       window.check = (condition, message) => { if (!condition) throw Error(message); };
-      for (let n = 0; n < 5; n++) {
+      for (let n = 0; n < 10; n++) {
         level = n; load();
-        check(enemies.length === [1,3,5,6,9][n], 'enemy count phase ' + n);
+        check(enemies.length === [1,3,5,6,9,10,11,12,13,14][n], 'enemy count phase ' + n);
       }
+      check(LEVELS.length === 10, 'ten phases');
+      for (let n = 5; n < 10; n++) {
+        level = n; load();
+        check(LEVELS[n].every(row => row.length === grid[0].length), 'rectangular phase ' + n);
+        check(solid(2,8) && !solid(2,7), 'safe spawn ' + n);
+        check(LEVELS[n].join('').split('*').length - 1 >= 10, 'enough stars for shield ' + n);
+        const finish = grid[7].indexOf('F');
+        check(finish > 0 && solid(finish,8), 'safe flag ' + n);
+        const gaps = [];
+        for (let c = 0; c < grid[0].length; c++) {
+          if (grid[8][c] !== '#') {
+            const start = c;
+            while (grid[8][c] !== '#') c++;
+            gaps.push([start,c]);
+          }
+        }
+        check(gaps.length >= 5, 'terrain obstacles ' + n);
+        for (const [start,end] of gaps) {
+          player = {x:start-1.5,y:7.099,vx:0,vy:0,onGround:true,jumps:MAX_JUMPS};
+          prevJump = false; keys.right = true;
+          let landed = false;
+          for (let frame = 0; frame < 180; frame++) {
+            keys.jump = frame !== 20;
+            movePlayer(1/60);
+            if (player.x >= end && player.onGround) { landed = true; break; }
+            if (player.y > ROWS + 1) break;
+          }
+          check(landed, 'double jump across phase ' + (n+1) + ' gap ' + start + '-' + end);
+        }
+        keys.right = false; keys.jump = false;
+        load();
+        player.x = finish; player.y = 7.099;
+        update(0);
+        check(state === 'won', 'flag wins phase ' + (n+1));
+        if (n === 9) check(banner.textContent.includes('zerou'), 'final celebration');
+        update(3);
+        check(level === (n+1)%10, 'advance after phase ' + (n+1));
+        check(Number(localStorage.getItem('level:aventura')) === level, 'saved progress ' + n);
+      }
+      level = 4; load(); win(); update(3);
+      check(level === 5, 'phase five leads to six');
       level = 0; load();
       player.x = 5.4; player.y = 7; update(0);
       check(stars === 1 && grid[7][6] === ' ', 'body edge collects');
@@ -63,6 +104,13 @@ with sync_playwright() as p:
     page.locator('[data-key="jump"]').dispatch_event('pointerdown')
     page.evaluate('update(.02); check(player.vy < 0, "touch jump")')
     page.locator('[data-key="jump"]').dispatch_event('pointerup')
+    page.evaluate("saveLevel('aventura', 9)")
+    page.reload()
+    assert page.evaluate("level === 9 && enemies.length === 14"), "resume phase ten"
+    page.set_viewport_size({'width':390,'height':844})
+    page.wait_for_function('W === 390 && H === 844')
+    page.evaluate("player.x = 19; banner.textContent = ''; draw()")
+    page.screenshot(path='/tmp/aventura-phase-ten-phone.png')
     assert not errors, errors
-    print('PASS: five phases, body contact, boxes, shield thresholds, collisions, grace, checkpoints, falls, HUD and controls')
+    print('PASS: ten phases, all new terrain gaps with real double jump, flags, progress, body contact, boxes, shield thresholds, collisions, grace, checkpoints, falls, HUD and controls')
     browser.close()
