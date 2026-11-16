@@ -241,10 +241,10 @@ function update(dt) {
 }
 
 function draw() {
-  ctx.fillStyle = "#f4a8c8";
+  ctx.fillStyle = CantinhoTheme.colors.background;
   ctx.fillRect(0, 0, W, H);
   const colW = W / COLS;
-  ctx.strokeStyle = "#de8eb0";
+  ctx.strokeStyle = CantinhoTheme.colors.grid;
   for (let c = 1; c < COLS; c++) {
     ctx.beginPath();
     ctx.moveTo(c * colW, 0);
@@ -256,7 +256,7 @@ function draw() {
   game.tiles.forEach((tile) => {
     const { top, bottom } = tileBounds(tile);
     if (bottom < 0 || top > VISIBLE_ROWS) return;
-    ctx.fillStyle = tile.missed ? "#f0a0a8" : tile.holding ? "#e8688f" : tile.hit ? "#f7c2d6" : "#2a2438";
+    ctx.fillStyle = tile.missed ? "#f0a0a8" : tile.holding ? "#e8688f" : tile.hit ? "#f7c2d6" : CantinhoTheme.colors.tile;
     ctx.fillRect(tile.col * colW + 2, top * rowH + 2, colW - 4, tile.rows * rowH - 4);
   });
 
@@ -299,7 +299,7 @@ function draw() {
     ctx.textBaseline = "alphabetic";
   }
 
-  ctx.fillStyle = "#3d2c4e";
+  ctx.fillStyle = CantinhoTheme.colors.foreground;
   ctx.font = "700 32px system-ui";
   ctx.textAlign = "center";
   ctx.fillText(game.hits, W / 2, 48);

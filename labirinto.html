@@ -4,39 +4,41 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#f4a8c8">
-<link rel="stylesheet" href="common.css?v=11">
+<script src="theme.js?v=2"></script>
+<link rel="stylesheet" href="theme.css?v=2">
+<link rel="stylesheet" href="common.css?v=12">
 <title>Labirinto da princesa</title>
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
 <style>
-  body { color: #3d2c4e; display: flex; flex-direction: column; height: 100svh; }
+  body { color: var(--text); display: flex; flex-direction: column; height: 100svh; }
   .top { display: flex; align-items: center; justify-content: space-between; padding: max(12px, env(safe-area-inset-top)) 18px 4px; gap: 12px; }
   h1 { font-size: clamp(1.15rem, 4vw, 1.6rem); margin: 0; }
   .top p { margin: 3px 0 0; font-size: .95rem; }
   .top-actions { display: flex; gap: 8px; align-items: center; }
   button, .home { font: inherit; color: inherit; border: 0; cursor: pointer; touch-action: none; }
-  .icon-button, .home { width: 48px; height: 48px; border-radius: 16px; background: #fff5fa; display: grid; place-items: center; font-size: 1.5rem; text-decoration: none; }
-  button:focus-visible, a:focus-visible { outline: 3px solid #673779; outline-offset: 3px; }
-  button:hover, .home:hover { background: #fff; }
+  .icon-button, .home { width: 48px; height: 48px; border-radius: 16px; background: var(--soft-surface); display: grid; place-items: center; font-size: 1.5rem; text-decoration: none; }
+  button:focus-visible, a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+  button:hover, .home:hover { background: var(--surface); }
   button:disabled { opacity: .5; cursor: default; }
   #view { position: relative; flex: 1; min-height: 0; }
   #game { cursor: grab; position: absolute; width: 100%; height: 100%; display: block; }
   #game.dragging { cursor: grabbing; }
   #hint { text-align: center; margin: 0; padding: 4px 12px; font-size: 1rem; min-height: 32px; }
   .controls { display: grid; grid-template-columns: repeat(3, 58px); grid-template-rows: repeat(2, 54px); gap: 7px; justify-content: center; padding: 4px 12px max(14px, env(safe-area-inset-bottom)); }
-  .direction { border-radius: 16px; background: #fff5fa; font-size: 1.7rem; box-shadow: 0 3px 0 #d580a7; }
+  .direction { border-radius: 16px; background: var(--soft-surface); font-size: 1.7rem; box-shadow: 0 3px 0 #d580a7; }
   .direction:active, .direction.held { background: #673779; color: #fff; transform: translateY(2px); box-shadow: none; }
   [data-direction="up"] { grid-column: 2; }
   [data-direction="left"] { grid-row: 2; grid-column: 1; }
   [data-direction="down"] { grid-row: 2; grid-column: 2; }
   [data-direction="right"] { grid-row: 2; grid-column: 3; }
-  .overlay { position: fixed; inset: 0; z-index: 8; display: grid; place-items: center; padding: 20px; background: #f4a8c8bb; }
+  .overlay { position: fixed; inset: 0; z-index: 8; display: grid; place-items: center; padding: 20px; background: var(--overlay); }
   [hidden] { display: none !important; }
-  .panel { max-width: 390px; width: 100%; text-align: center; background: #fff8fc; border-radius: 24px; padding: 30px 24px; box-shadow: 0 14px 42px #79345126; }
+  .panel { max-width: 390px; width: 100%; text-align: center; background: var(--soft-surface); border-radius: 24px; padding: 30px 24px; box-shadow: 0 14px 42px #79345126; }
   .panel h2 { margin: 0 0 12px; font-size: 1.9rem; }
   .panel p { line-height: 1.5; margin: 0 0 22px; font-size: 1.1rem; }
   .primary { background: #673779; color: white; padding: 15px 24px; border-radius: 16px; font-weight: 750; min-width: 160px; }
   .primary:hover { background: #512760; }
-  .panel .home-link { display: block; color: #673779; margin-top: 20px; }
+  .panel .home-link { display: block; color: var(--link); margin-top: 20px; }
   @media (orientation: landscape) and (max-height: 540px) {
     .top { padding-top: max(6px, env(safe-area-inset-top)); }
     .top p { display: none; }

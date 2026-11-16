@@ -4,20 +4,30 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#f4a8c8">
+<script src="theme.js?v=2"></script>
+<link rel="stylesheet" href="theme.css?v=2">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Cantinho">
-<link rel="stylesheet" href="common.css?v=11">
+<link rel="stylesheet" href="common.css?v=12">
 <title>Cantinho</title>
 <style>
-  body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #f4a8c8; touch-action: auto; overflow: auto; padding: 24px; }
-  h1 { margin: 0 0 8px; color: #3d2c4e; }
-  a.game { display: block; width: min(320px, 90vw); padding: 16px; border: 0; border-radius: 18px; background: #fff; color: #3d2c4e; font-size: 1.4rem; font-weight: 700; text-align: center; text-decoration: none; box-shadow: 0 4px 0 #de8eb0; }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: safe center; min-height: 100svh; height: auto; gap: 14px; background: var(--page-bg); touch-action: auto; overflow: auto; padding: 24px; }
+  h1 { margin: 0 0 8px; color: var(--text); }
+  a.game { flex-shrink: 0; display: block; width: min(320px, 90vw); padding: 16px; border: 0; border-radius: 18px; background: var(--surface); color: var(--text); font-size: 1.4rem; font-weight: 700; text-align: center; text-decoration: none; box-shadow: 0 4px 0 #de8eb0; }
 </style>
 </head>
 <body>
 <h1>Cantinho</h1>
+<fieldset class="theme-picker">
+  <legend>Cor do fundo</legend>
+  <label class="color-picker"><input type="color" id="background-color" value="#f4a8c8"> Escolher cor</label>
+  <div>
+  <label><input type="radio" name="background-theme" value="light" checked> Claro</label>
+  <label><input type="radio" name="background-theme" value="dark"> Escuro</label>
+  </div>
+</fieldset>
 <a class="game" href="magictiles.html">🎹 Magic Tiles</a>
 <a class="game" href="balloons.html">🎈 Estourar balões</a>
 <a class="game" href="memory.html">🐶 Jogo da memória</a>

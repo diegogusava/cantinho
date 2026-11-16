@@ -4,12 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f4a8c8">
+<script src="theme.js?v=2"></script>
+<link rel="stylesheet" href="theme.css?v=2">
 <title>Fotos do quebra-cabeça</title>
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0; padding: 20px; font-family: system-ui, sans-serif; background: #f4a8c8; color: #3d2c4e; }
-  h1 { color: #3d2c4e; margin-top: 0; }
-  input, button, label.upload { font-size: 1.1rem; padding: 10px 14px; border-radius: 14px; border: 0; background: #fff; color: #3d2c4e; box-shadow: 0 4px 0 #de8eb0; }
+  body { margin: 0; padding: 20px; font-family: system-ui, sans-serif; background: var(--page-bg); color: var(--text); }
+  h1 { color: var(--text); margin-top: 0; }
+  input, button, label.upload { font-size: 1.1rem; padding: 10px 14px; border-radius: 14px; border: 0; background: var(--surface); color: var(--text); box-shadow: 0 4px 0 #de8eb0; }
   label.upload { display: inline-block; background: #e8688f; color: #fff; box-shadow: 0 4px 0 #c45a7c; }
   #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-top: 20px; }
   figure { margin: 0; text-align: center; }
