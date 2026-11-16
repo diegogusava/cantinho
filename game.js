@@ -10,9 +10,16 @@ const result = document.getElementById("result");
 
 let W, H, rowH;
 let audio;
-let level = LEVELS[0];
+let level = LEVELS[savedLevel("magictiles:difficulty", 0)] || LEVELS[0];
 let game = null;
-let song = SONGS[0];
+let song = SONGS[savedLevel("magictiles", 0)] || SONGS[0];
+if (SONGS.indexOf(song) > 0 && !readStars(SONGS[SONGS.indexOf(song) - 1])) song = SONGS[0];
+setupProgress("magictiles", SONGS.map((song) => `stars:${song.name}`));
+
+function saveSelection() {
+  saveLevel("magictiles", SONGS.indexOf(song));
+  saveLevel("magictiles:difficulty", LEVELS.indexOf(level));
+}
 
 const NOTE_SEMITONES = { C: -9, D: -7, E: -5, F: -4, G: -2, A: 0, B: 2 };
 function resumeAudio() {
@@ -86,6 +93,7 @@ function writeStars(song, value) {
 }
 
 function start() {
+  saveSelection();
   resumeAudio();
   // Unlock the output during the start gesture, before the first tile is hit.
   const unlock = audio.createBufferSource();
@@ -131,6 +139,7 @@ function finish(won) {
     const next = SONGS[SONGS.indexOf(song) + 1];
     game.advanced = Boolean(next);
     if (next) song = next;
+    saveSelection();
   }
   result.textContent = won
     ? `Parabéns, você ganhou! 💖`
@@ -289,7 +298,7 @@ function renderMenu() {
     const button = document.createElement("button");
     button.textContent = l.name;
     button.className = l === level ? "on" : "";
-    button.onclick = () => { level = l; renderMenu(); };
+    button.onclick = () => { level = l; saveSelection(); renderMenu(); };
     return button;
   }));
 

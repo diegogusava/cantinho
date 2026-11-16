@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#f4a8c8">
-<link rel="stylesheet" href="common.css?v=10">
+<link rel="stylesheet" href="common.css?v=11">
 <title>Quebra-cabeça</title>
 <style>
 .picker { position: fixed; inset: 0; z-index: 3; padding: 70px 16px 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; align-content: start; overflow-y: auto; touch-action: pan-y; background: #f4a8c8; }
@@ -18,7 +18,9 @@
 <a class="back" href="index.html">🏠</a>
 <div class="picker" id="picker"></div>
 <div class="banner" id="banner"></div>
+<script src="progress.js"></script>
 <script src="common.js"></script>
+<script>setupProgress("puzzle");</script>
 <script src="cheer.js"></script>
 <script src="photos.js"></script>
 <script>
@@ -102,7 +104,8 @@ function win() {
   banner.textContent = "Parabéns! 💖";
   cheer("win");
   beep(880, 0.4);
-  setTimeout(() => { saveLevel("puzzle", ++level); choose(); }, 2800);
+  saveLevel("puzzle", ++level);
+  setTimeout(choose, 2800);
 }
 
 function draw() {

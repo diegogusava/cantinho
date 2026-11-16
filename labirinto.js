@@ -112,7 +112,8 @@ const monster = makeMonster();
 scene.add(princess, monster);
 let board;
 let castle;
-let level = 1;
+let level = savedLevel("labirinto", 1);
+levelLabel.textContent = `Fase ${level} · Encontre o castelo`;
 let maze = generateMaze(level);
 let round = createRound(maze, level);
 let state = 'ready';
@@ -311,6 +312,7 @@ function frame(time) {
     if (displayedHint !== text) { hint.textContent = text; displayedHint = text; }
     if (round.status !== 'playing') {
       state = round.status;
+      if (state === 'won') saveLevel('labirinto', level + 1);
       playResult(state === 'won');
       if (state === 'won') showPanel('Você conseguiu!', 'A princesa chegou ao castelo. Vamos passear em outro jardim?', 'Próxima fase');
       else showPanel('Quase lá!', 'O monstrinho pegou você. Vamos tentar outro caminho?', 'Tentar de novo');
@@ -384,9 +386,10 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) pause
 // Keep keyboard focus inside the round screen while it is open.
 overlay.addEventListener('keydown', (event) => {
   if (event.key !== 'Tab') return;
-  const home = overlay.querySelector('a');
-  if (event.shiftKey && document.activeElement === action) { event.preventDefault(); home.focus(); }
-  else if (!event.shiftKey && document.activeElement === home) { event.preventDefault(); action.focus(); }
+  const last = overlay.querySelector('.progress-menu[open] button')
+    || overlay.querySelector('.progress-menu summary');
+  if (event.shiftKey && document.activeElement === action) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); action.focus(); }
 });
 canvas.addEventListener('webglcontextlost', (event) => {
   event.preventDefault();

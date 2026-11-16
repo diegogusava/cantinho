@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#f4a8c8">
-<link rel="stylesheet" href="common.css?v=10">
+<link rel="stylesheet" href="common.css?v=11">
 <title>Labirinto da princesa</title>
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
 <style>
@@ -68,7 +68,9 @@
     <a class="home-link" href="index.html">Voltar ao início</a>
   </div>
 </section>
+<script src="progress.js"></script>
 <script src="common.js"></script>
+<script>setupProgress("labirinto", [], document.querySelector(".panel"));</script>
 <script type="module">
   import('./labirinto.js').catch(() => {
     document.getElementById('overlay').hidden = false;

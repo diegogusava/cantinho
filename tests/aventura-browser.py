@@ -96,7 +96,7 @@ with sync_playwright() as p:
         player.x = finish; player.y = 7.099; update(0);
         check(state === 'won', 'finish phase ' + (n+1));
         check(banner.textContent.includes('zerou') === (n === 14), 'final celebration only at 15');
-        update(3); check(level === (n+1)%15, 'progress new phase ' + n);
+        update(3); check(level === Math.min(n+1,14), 'progress new phase ' + n);
       }
       level = 9; load(); win(); update(3);
       check(level === 10, 'ten leads to eleven');

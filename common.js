@@ -79,11 +79,3 @@ function shuffle(items) {
   }
   return items;
 }
-
-function savedLevel(game, fallback) {
-  try { return Number(localStorage.getItem(`level:${game}`)) || fallback; } catch { return fallback; }
-}
-
-function saveLevel(game, value) {
-  try { localStorage.setItem(`level:${game}`, value); } catch {}
-}

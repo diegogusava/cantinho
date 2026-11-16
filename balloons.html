@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#f4a8c8">
-<link rel="stylesheet" href="common.css?v=10">
+<link rel="stylesheet" href="common.css?v=11">
 <title>Balões</title>
 </head>
 <body>
@@ -12,7 +12,9 @@
 <div class="hud" id="hud"></div>
 <div class="banner" id="banner"></div>
 <a class="back" href="index.html">🏠</a>
+<script src="progress.js"></script>
 <script src="common.js"></script>
+<script>setupProgress("balloons");</script>
 <script src="cheer.js"></script>
 <script>
 const canvas = document.getElementById("game");
@@ -61,6 +63,7 @@ function completeLevel() {
   between = true;
   balloons = [];
   banner.textContent = "Nível " + level + " completo! 💖";
+  saveLevel("balloons", level + 1);
   cheer("win");
   setTimeout(() => {
     saveLevel("balloons", ++level);

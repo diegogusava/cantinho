@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#f4a8c8">
-<link rel="stylesheet" href="common.css?v=10">
+<link rel="stylesheet" href="common.css?v=11">
 <title>Estrelas</title>
 </head>
 <body>
@@ -12,7 +12,9 @@
 <div class="hud" id="hud"></div>
 <a class="back" href="index.html">🏠</a>
 <div class="banner" id="banner"></div>
+<script src="progress.js"></script>
 <script src="common.js"></script>
+<script>setupProgress("stars");</script>
 <script src="cheer.js"></script>
 <script>
 const canvas = document.getElementById("game");
@@ -36,12 +38,12 @@ function start() {
   target = { ...player };
   stars = [randomPoint(), randomPoint()];
   clouds = [];
-  score = 0;
+  score = savedLevel("stars", 0);
   lives = MAX_LIVES;
   safeUntil = 0;
   over = 0;
   banner.textContent = "";
-  spawnCloud();
+  for (let i = 0; i < Math.min(6, 1 + Math.floor(score / 5)); i++) spawnCloud();
   updateHud();
 }
 
@@ -67,6 +69,7 @@ function update(dt) {
   stars = stars.filter((star) => {
     if (Math.hypot(star.x - player.x, star.y - player.y) > 44) return true;
     score++;
+    saveLevel("stars", score);
     beep(600 + (score % 6) * 100, 0.15);
     if (score % 5 === 0 && clouds.length < 6) spawnCloud();
     updateHud();

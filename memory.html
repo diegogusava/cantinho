@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#f4a8c8">
-<link rel="stylesheet" href="common.css?v=10">
+<link rel="stylesheet" href="common.css?v=11">
 <title>Memória</title>
 <style>
   html, body { background: #f4a8c8; }
@@ -13,7 +13,7 @@
   .card:active { transform: scale(.96); }
   .card.up { background: #fff; box-shadow: 0 8px 18px rgba(61, 44, 78, .12); }
   .card.done { background: #fff; box-shadow: inset 0 0 0 3px var(--player), 0 8px 18px rgba(61, 44, 78, .12); }
-  .hud { font-size: 1.05rem; max-width: calc(100% - 70px); color: #3d2c4e; }
+  .hud { font-size: 1.05rem; max-width: calc(100% - 160px); color: #3d2c4e; }
   .hud span { color: var(--color); border: 0; border-radius: 999px; padding: 2px 8px; background: #fff; }
   .hud span.now { color: #fff; background: var(--color); }
   #players { position: fixed; inset: 0; z-index: 7; background: #f4a8c8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
@@ -36,7 +36,9 @@
 <div id="players"></div>
 <div class="banner" id="banner"></div>
 <button id="next" hidden>Próximo ▶</button>
+<script src="progress.js"></script>
 <script src="common.js"></script>
+<script>setupProgress("memory");</script>
 <script src="cheer.js"></script>
 <script>
 const EMOJIS = ["🐶", "🐱", "🐭", "🐰", "🦊", "🐻", "🐼", "🐸", "🐵", "🐧", "🦁", "🐯", "🐷", "🐮", "🦄", "🐙", "🐠", "🦋", "🐝", "🦜", "🐢", "🦕", "👸", "🧚", "⛄", "🤖", "👻", "🎃", "🚗", "🚀", "⭐", "🍦"];
@@ -224,6 +226,7 @@ function win() {
   const best = Math.max(...scores);
   const winners = scores.flatMap((score, i) => (score === best ? [names[i]] : []));
   banner.textContent = scores.length === 1 ? "Parabéns, " + names[0] + "! 💖" : winners.length > 1 ? "Empate! " + winners.join(" e ") + " 💖" : winners[0] + " ganhou! 💖";
+  saveLevel("memory", level + 1);
   cheer("win");
   setTimeout(() => { nextButton.hidden = false; }, 1000);
 }

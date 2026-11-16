@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#f4a8c8">
-<link rel="stylesheet" href="common.css?v=10">
+<link rel="stylesheet" href="common.css?v=11">
 <title>Aventura</title>
 <style>
-  .hud { max-width: calc(100% - 76px); font-size: clamp(1rem, 4vw, 1.6rem); }
+  .hud { max-width: calc(100% - 160px); font-size: clamp(1rem, 4vw, 1.6rem); }
   .hud small { display: block; font-size: .75em; }
   .pad { position: fixed; bottom: calc(18px + env(safe-area-inset-bottom)); z-index: 5; display: flex; gap: 14px; }
   .pad.left { left: 18px; }
@@ -23,7 +23,9 @@
 <div class="banner" id="banner"></div>
 <div class="pad left"><button data-key="left">◀</button><button data-key="right">▶</button></div>
 <div class="pad right"><button data-key="jump">⬆</button></div>
+<script src="progress.js"></script>
 <script src="common.js"></script>
+<script>setupProgress("aventura");</script>
 <script src="cheer.js"></script>
 <script>
 const canvas = document.getElementById("game");
@@ -316,6 +318,7 @@ function die() {
 
 function win() {
   state = "won";
+  saveLevel("aventura", Math.min(level + 1, LEVELS.length - 1));
   timer = 2.8;
   banner.textContent = level === LEVELS.length - 1 ? "Você zerou o jogo! 🏆" : "Fase " + (level + 1) + " completa! 💖";
   cheer("win");
@@ -361,8 +364,9 @@ function update(dt) {
     return;
   }
   if (state === "won") {
+    if (level === LEVELS.length - 1) return;
     if ((timer -= dt) <= 0) {
-      level = (level + 1) % LEVELS.length;
+      level = Math.min(level + 1, LEVELS.length - 1);
       saveLevel("aventura", level);
       starsAtStart = level === 0 ? 0 : stars;
       shieldAtStart = level === 0 ? false : shield;
