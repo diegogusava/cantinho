@@ -32,7 +32,8 @@ a { color: var(--link); }
 .theme-picker input[type="color"] { width: 52px; height: 44px; padding: 3px; border: 1px solid var(--text); border-radius: 8px; background: var(--surface); cursor: pointer; }
 
   .theme-menu { position: fixed; top: max(12px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); z-index: 20; }
-  .theme-menu summary { min-height: 44px; padding: 12px 16px; border-radius: 12px; background: var(--surface); color: var(--text); font-weight: 650; cursor: pointer; }
+  .theme-menu summary { display: grid; place-items: center; width: 44px; height: 44px; padding: 10px; border-radius: 12px; list-style: none; background: transparent; color: var(--text); cursor: pointer; }
+.theme-menu summary::-webkit-details-marker { display: none; }
   .theme-menu summary:hover { background: var(--hover-surface); }
   .theme-menu .theme-picker { position: absolute; right: 0; top: 100%; width: min(280px, calc(100vw - 28px)); margin-top: 8px; padding: 18px 12px 12px; border-radius: 16px; background: var(--surface); box-shadow: 0 8px 24px #24142833; }
 

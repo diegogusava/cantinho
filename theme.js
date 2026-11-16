@@ -95,6 +95,12 @@
       }
     }
     for (const menu of document.querySelectorAll(".theme-menu, .progress-menu")) {
+      const summary = menu.querySelector("summary");
+      summary.setAttribute("aria-label", "Opções");
+      summary.title = "Opções";
+      summary.innerHTML = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m9.5 3-.5 2-2 .9-1.8-1-2.5 4.2 1.6 1.4v2.3l-1.6 1.4 2.5 4.2 1.8-1 2 .9.5 2h5l.5-2 2-.9 1.8 1 2.5-4.2-1.6-1.4v-2.3l1.6-1.4-2.5-4.2-1.8 1-2-.9-.5-2z"/>
+        <circle cx="12" cy="12" r="3"/></svg>`;
       menu.addEventListener("keydown", (event) => {
         if (event.key !== "Tab") event.stopPropagation();
         if (event.key === "Escape" && menu.open) {

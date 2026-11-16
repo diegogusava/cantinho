@@ -8,7 +8,7 @@ canvas, button, .card { -webkit-user-select: none; user-select: none; -webkit-to
 
 .progress-menu { position: fixed; top: max(10px, env(safe-area-inset-top)); right: calc(66px + env(safe-area-inset-right)); z-index: 20; color: var(--text); font: 600 .9rem system-ui, sans-serif; }
 .progress-menu summary, .progress-menu button { min-height: 44px; padding: 12px; border: 0; border-radius: 12px; background: var(--soft-surface); color: var(--text); font: inherit; cursor: pointer; }
-.progress-menu summary { list-style: none; text-align: center; }
+.progress-menu summary { display: grid; place-items: center; width: 44px; height: 44px; padding: 10px; list-style: none; text-align: center; background: transparent; }
 .progress-menu summary::-webkit-details-marker { display: none; }
 .options-panel { position: absolute; right: 0; top: 100%; width: min(280px, calc(100vw - 28px)); margin-top: 8px; padding: 16px 12px; border-radius: 16px; background: var(--soft-surface); box-shadow: 0 8px 24px #24142833; max-height: calc(100svh - 90px); overflow-y: auto; touch-action: pan-y; }
 .progress-menu .options-panel button { position: static; width: 100%; display: block; margin-top: 12px; white-space: normal; background: var(--surface); }
