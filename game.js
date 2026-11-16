@@ -85,6 +85,15 @@ function buildTiles(song) {
   });
 }
 
+function buildHazards(tiles) {
+  return tiles.filter((tile, index) => index >= 2 && (index - 2) % level.hazardEvery === 0)
+    .map((tile) => ({
+      col: (tile.col + 1 + Math.floor(Math.random() * (COLS - 1))) % COLS,
+      start: tile.start,
+      rows: 1,
+    }));
+}
+
 function readStars(song) {
   try { return Number(localStorage.getItem(`stars:${song.name}`)) || 0; } catch { return 0; }
 }
@@ -109,6 +118,7 @@ function start() {
     over: false,
     flash: null,
   };
+  game.hazards = buildHazards(game.tiles);
   menu.hidden = true;
 }
 
@@ -128,6 +138,7 @@ function checkEnd() {
 }
 
 function finish(won) {
+  if (game.over) return;
   game.over = true;
   game.won = won;
   game.tiles.forEach((tile) => tile.holding && endHold(tile));
@@ -143,7 +154,9 @@ function finish(won) {
   }
   result.textContent = won
     ? `Parabéns, você ganhou! 💖`
-    : `Continue tentando! Você consegue! (${hits}/${tiles.length})`;
+    : game.hitHazard
+      ? "Você tocou na peça vermelha! Evite as peças com X e tente de novo."
+      : `Continue tentando! Você consegue! (${hits}/${tiles.length})`;
   cheer(won ? "win" : "retry");
   setTimeout(() => { renderMenu(); menu.hidden = false; }, won ? 4000 : 800);
 }
@@ -175,6 +188,16 @@ function onTap(event) {
   canvas.setPointerCapture(event.pointerId);
   const col = Math.floor(event.clientX / (W / COLS));
   const row = event.clientY / rowH;
+  const hazard = game.hazards.find((candidate) => {
+    const { top, bottom } = tileBounds(candidate);
+    return candidate.col === col && row >= top && row < bottom;
+  });
+  if (hazard) {
+    game.hitHazard = true;
+    game.flash = { col, row, until: performance.now() + 800 };
+    finish(false);
+    return;
+  }
   const tile = game.tiles.find((candidate) => {
     const { top, bottom } = tileBounds(candidate);
     return candidate.col === col && !candidate.hit && row >= top && row <= bottom;
@@ -207,6 +230,7 @@ function update(dt) {
   game.scroll += game.speed * dt;
   game.tiles.filter((tile) => tile.holding && tileBounds(tile).top >= tile.pressRow - 0.25)
     .forEach((tile) => { endHold(tile); checkEnd(); });
+  if (game.over) return;
   const missed = game.tiles.find(
     (tile) => !tile.hit && !tile.missed && tileBounds(tile).top > VISIBLE_ROWS,
   );
@@ -234,6 +258,19 @@ function draw() {
     if (bottom < 0 || top > VISIBLE_ROWS) return;
     ctx.fillStyle = tile.missed ? "#f0a0a8" : tile.holding ? "#e8688f" : tile.hit ? "#f7c2d6" : "#2a2438";
     ctx.fillRect(tile.col * colW + 2, top * rowH + 2, colW - 4, tile.rows * rowH - 4);
+  });
+
+  game.hazards.forEach((tile) => {
+    const { top, bottom } = tileBounds(tile);
+    if (bottom < 0 || top > VISIBLE_ROWS) return;
+    ctx.fillStyle = "#b42332";
+    ctx.fillRect(tile.col * colW + 2, top * rowH + 2, colW - 4, rowH - 4);
+    ctx.fillStyle = "#fff";
+    ctx.font = `800 ${Math.min(colW * 0.55, rowH * 0.5)}px system-ui`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("X", (tile.col + 0.5) * colW, (top + 0.5) * rowH);
+    ctx.textBaseline = "alphabetic";
   });
 
   if (game.flash && performance.now() < game.flash.until) {

@@ -1,4 +1,4 @@
-// Domínio público. "C4" = bloco curto. "C4:2" = bloco longo de 2 tempos (segurar).
+// Melodias tradicionais e clássicas em domínio público; as quatro últimas são originais. "C4" = bloco curto. "C4:2" = bloco longo de 2 tempos (segurar).
 // "D#5" = sustenido. Melodias escritas de memória: conferir de ouvido.
 const repeat = (phrase, times) => Array(times).fill(phrase).join(" ");
 const hold = (phrase) => phrase.split(" ").map((note) => `${note}:2`).join(" ");
@@ -69,10 +69,27 @@ const SONGS = [
       "F#5 G5 A5 F#5 G5 A5 F#5 A5 C#6 B5 A5 G5 F#5:3",
     ].join(" "),
   },
+  // Melodias originais do Cantinho.
+  {
+    name: "Passeio das Borboletas",
+    notes: repeat("C5 E5 G5 E5 D5 F5 A5 F5 E5 G5 C6:2 B5 G5 E5 D5 C5:2", 2),
+  },
+  {
+    name: "Dança das Gotinhas",
+    notes: repeat("A4 C5 E5 A5 G5 E5 C5 B4 A4:2 E5 G5 B5 A5 F5 D5 E5:2", 3),
+  },
+  {
+    name: "Estrelas no Jardim",
+    notes: repeat("F4 A4 C5 F5:2 E5 C5 A4 G4 A4 C5 E5 G5:2 F5 D5 C5 A4:2", 3),
+  },
+  {
+    name: "Corrida do Arco-Íris",
+    notes: repeat("C5 D5 E5 G5 E5 D5 F5 A5 F5 E5 G5 B5 G5 F5 A5 C6 B5 G5 E5 D5 C5:3", 3),
+  },
 ];
 
 const LEVELS = [
-  { name: "Fácil", speed: 2 },
-  { name: "Médio", speed: 3.2 },
-  { name: "Difícil", speed: 4.8 },
+  { name: "Fácil", speed: 2, hazardEvery: 6 },
+  { name: "Médio", speed: 3.2, hazardEvery: 4 },
+  { name: "Difícil", speed: 4.8, hazardEvery: 2 },
 ];
