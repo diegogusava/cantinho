@@ -41,6 +41,9 @@ function setupProgress(game, extraKeys = [], host = document.body) {
     } catch {}
     location.reload();
   };
-  menu.append(summary, reset);
+  const panel = document.createElement("div");
+  panel.className = "options-panel";
+  panel.append(reset);
+  menu.append(summary, panel);
   host.append(menu);
 }

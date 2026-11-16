@@ -10,10 +10,14 @@ canvas, button, .card { -webkit-user-select: none; user-select: none; -webkit-to
 .progress-menu summary, .progress-menu button { min-height: 44px; padding: 12px; border: 0; border-radius: 12px; background: var(--soft-surface); color: var(--text); font: inherit; cursor: pointer; }
 .progress-menu summary { list-style: none; text-align: center; }
 .progress-menu summary::-webkit-details-marker { display: none; }
-.progress-menu button { position: absolute; right: 0; white-space: nowrap; display: block; margin-top: 6px; box-shadow: 0 4px 12px #79345126; }
+.options-panel { position: absolute; right: 0; top: 100%; width: min(280px, calc(100vw - 28px)); margin-top: 8px; padding: 16px 12px; border-radius: 16px; background: var(--soft-surface); box-shadow: 0 8px 24px #24142833; max-height: calc(100svh - 90px); overflow-y: auto; touch-action: pan-y; }
+.progress-menu .options-panel button { position: static; width: 100%; display: block; margin-top: 12px; white-space: normal; background: var(--surface); }
+.top-actions .progress-menu { position: relative; top: auto; right: auto; }
 .progress-menu summary:hover, .progress-menu button:hover { background: var(--hover-surface); }
 .progress-menu :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 
 .hud { max-width: calc(100% - 160px); }
 .panel .progress-menu { position: static; margin-top: 16px; }
 .panel .progress-menu button { position: static; margin: 6px auto 0; }
+
+.panel .options-panel { position: static; margin: 8px auto 0; max-width: 100%; }

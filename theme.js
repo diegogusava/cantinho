@@ -66,6 +66,43 @@
   };
   apply();
   document.addEventListener("DOMContentLoaded", () => {
+    if (!document.getElementById("background-color")) {
+      const picker = document.createElement("fieldset");
+      picker.className = "theme-picker";
+      picker.innerHTML = `<legend>Cor do fundo</legend>
+        <label class="color-picker"><input type="color" id="background-color" value="#f4a8c8"> Escolher cor</label>
+        <div><label><input type="radio" name="background-theme" value="light"> Claro</label>
+        <label><input type="radio" name="background-theme" value="dark"> Escuro</label></div>`;
+      const progressMenu = document.querySelector(".progress-menu");
+      if (progressMenu) {
+        progressMenu.querySelector(".options-panel").prepend(picker);
+        const actions = document.querySelector(".top-actions");
+        if (actions && !document.querySelector("#overlay:not([hidden])")) actions.prepend(progressMenu);
+      } else {
+        const menu = document.createElement("details");
+        menu.className = "theme-menu";
+        const summary = document.createElement("summary");
+        summary.textContent = "Opções";
+        menu.append(summary, picker);
+        const header = document.querySelector(".paint-header");
+        if (header) {
+          menu.classList.add("theme-menu-inline");
+          header.insertBefore(menu, header.querySelector(".home-link"));
+        } else {
+          document.body.classList.add("theme-menu-host");
+          document.body.append(menu);
+        }
+      }
+    }
+    for (const menu of document.querySelectorAll(".theme-menu, .progress-menu")) {
+      menu.addEventListener("keydown", (event) => {
+        if (event.key !== "Tab") event.stopPropagation();
+        if (event.key === "Escape" && menu.open) {
+          menu.open = false;
+          menu.querySelector("summary").focus();
+        }
+      });
+    }
     apply();
     document.querySelectorAll('input[name="background-theme"]').forEach((input) => {
       input.addEventListener("change", () => {

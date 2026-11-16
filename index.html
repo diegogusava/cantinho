@@ -4,22 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#f4a8c8">
-<script src="theme.js?v=2"></script>
-<link rel="stylesheet" href="theme.css?v=2">
+<script src="theme.js?v=3"></script>
+<link rel="stylesheet" href="theme.css?v=3">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Cantinho">
-<link rel="stylesheet" href="common.css?v=12">
+<link rel="stylesheet" href="common.css?v=13">
 <title>Cantinho</title>
 <style>
-  body { display: flex; flex-direction: column; align-items: center; justify-content: safe center; min-height: 100svh; height: auto; gap: 14px; background: var(--page-bg); touch-action: auto; overflow: auto; padding: 24px; }
+  html { height: auto; overflow-y: auto; touch-action: auto; }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: safe center; min-height: 100svh; height: auto; gap: 14px; background: var(--page-bg); touch-action: auto; overflow: visible; padding: 76px 24px 24px; }
   h1 { margin: 0 0 8px; color: var(--text); }
   a.game { flex-shrink: 0; display: block; width: min(320px, 90vw); padding: 16px; border: 0; border-radius: 18px; background: var(--surface); color: var(--text); font-size: 1.4rem; font-weight: 700; text-align: center; text-decoration: none; box-shadow: 0 4px 0 #de8eb0; }
 </style>
 </head>
 <body>
 <h1>Cantinho</h1>
+<details class="theme-menu">
+  <summary>Cor do fundo</summary>
 <fieldset class="theme-picker">
   <legend>Cor do fundo</legend>
   <label class="color-picker"><input type="color" id="background-color" value="#f4a8c8"> Escolher cor</label>
@@ -28,6 +31,7 @@
   <label><input type="radio" name="background-theme" value="dark"> Escuro</label>
   </div>
 </fieldset>
+</details>
 <a class="game" href="magictiles.html">🎹 Magic Tiles</a>
 <a class="game" href="balloons.html">🎈 Estourar balões</a>
 <a class="game" href="memory.html">🐶 Jogo da memória</a>
@@ -39,6 +43,7 @@
 <a class="game" href="jardim.html">🌸 Jardim</a>
 <a class="game" href="labirinto.html">👑 Labirinto da princesa</a>
 <a href="fotos.html" style="position:fixed;bottom:10px;right:14px;text-decoration:none;opacity:.5">🔒</a>
-<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");</script>
+<script>
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");</script>
 </body>
 </html>

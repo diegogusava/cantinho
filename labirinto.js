@@ -176,6 +176,7 @@ function showPanel(heading, text, label) {
   title.textContent = heading;
   message.textContent = text;
   action.textContent = label;
+  overlay.querySelector(".panel").append(document.querySelector(".progress-menu"));
   overlay.hidden = false;
   view.inert = true;
   document.querySelector('.controls').inert = true;
@@ -195,6 +196,7 @@ function start() {
   clearInput();
   state = 'playing';
   lastTime = performance.now();
+  document.querySelector(".top-actions").prepend(document.querySelector(".progress-menu"));
   overlay.hidden = true;
   view.inert = false;
   document.querySelector('.controls').inert = false;

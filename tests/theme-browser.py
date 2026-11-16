@@ -23,6 +23,14 @@ def contrast(foreground, background):
     a, b = sorted([luminance(foreground), luminance(background)])
     return (b + .05) / (a + .05)
 
+def open_color_menu(page):
+    if not page.locator('.theme-menu').get_attribute('open') == '':
+        page.locator('.theme-menu summary').click()
+
+def goto_index(page):
+    page.goto(URL + '/index.html')
+    open_color_menu(page)
+
 pages = ['index', 'magictiles', 'balloons', 'memory', 'puzzle', 'pintar', 'runner', 'aventura', 'stars', 'jardim', 'labirinto', 'fotos']
 try:
     with sync_playwright() as p:
@@ -31,16 +39,26 @@ try:
         page = context.new_page()
         errors = []
         page.on('pageerror', lambda error: errors.append(str(error)))
-        page.goto(URL + '/index.html')
+        goto_index(page)
         assert page.locator('input[value="light"]').is_checked()
         assert page.locator('h1').bounding_box()['y'] >= 0
+        page.keyboard.press('Escape')
+        assert page.locator('.theme-menu').get_attribute('open') is None
+        page.set_viewport_size({'width': 390, 'height': 600})
+        page.mouse.wheel(0, 1500)
+        page.wait_for_function('scrollY > 0')
+        assert page.locator('a.game').last.bounding_box()['y'] < 600
+        assert page.evaluate('getComputedStyle(document.documentElement).touchAction') == 'auto'
+        page.evaluate('scrollTo(0, 0)')
+        page.set_viewport_size({'width': 390, 'height': 844})
+        open_color_menu(page)
         # Native radio buttons support keyboard selection.
         page.locator('input[value="light"]').focus()
         page.keyboard.press('ArrowRight')
         assert page.locator('input[value="dark"]').is_checked()
         assert page.evaluate('localStorage.getItem("cantinho:theme")') == 'dark'
         for theme, color in [('dark', 'rgb(36, 27, 45)'), ('light', 'rgb(244, 168, 200)')]:
-            page.goto(URL + '/index.html')
+            goto_index(page)
             page.locator(f'input[value="{theme}"]').check()
             for name in pages:
                 page.goto(f'{URL}/{name}.html')
@@ -56,6 +74,28 @@ try:
                 if name in ['jardim', 'labirinto']:
                     page.wait_for_timeout(600)
                 page.screenshot(path=str(ARTIFACTS / f'{name}-{theme}.png'), full_page=True)
+                menu = page.locator('.theme-menu, .progress-menu')
+                assert menu.count() == 1, name
+                menu.locator('summary').click()
+                page.locator('#background-color').fill('#1565c0')
+                assert page.evaluate('CantinhoTheme.colors.background') == '#1565c0', name
+                page.locator(f'input[value="{theme}"]').check()
+                assert page.evaluate('getComputedStyle(document.body).backgroundColor') == color, name
+                box = menu.locator('fieldset').bounding_box()
+                assert box['x'] >= 0 and box['x'] + box['width'] <= 390, (name, box)
+                page.screenshot(path=str(ARTIFACTS / f'{name}-menu-{theme}.png'))
+                page.keyboard.press('Escape')
+                assert menu.get_attribute('open') is None, name
+                if name == 'labirinto':
+                    page.get_by_role('button', name='Jogar', exact=True).click()
+                    assert page.locator('.top-actions .progress-menu').count() == 1
+                    menu.locator('summary').click()
+                    page.locator('#background-color').fill('#1565c0')
+                    assert page.evaluate('CantinhoTheme.colors.background') == '#1565c0'
+                    page.locator(f'input[value="{theme}"]').check()
+                    page.keyboard.press('Escape')
+                    page.get_by_role('button', name='Pausar', exact=True).click()
+                    assert page.locator('.panel .progress-menu').count() == 1
             page.goto(URL + '/magictiles.html')
             page.locator('#play').click()
             assert page.evaluate('game && !game.over')
@@ -63,8 +103,9 @@ try:
             assert page.evaluate('Array.from(ctx.getImageData(0, 100, 1, 1).data).slice(0,3)') == expected
             page.screenshot(path=str(ARTIFACTS / f'magictiles-playing-{theme}.png'))
         # The user can pick any background color, independently of presets.
-        page.goto(URL + '/index.html')
+        goto_index(page)
         for value in ['#1565c0', '#ffcc00', '#ffffff', '#000000', '#cc44aa']:
+            open_color_menu(page)
             page.locator('#background-color').fill(value)
             assert page.evaluate('CantinhoTheme.colors.background') == value
             fg, bg = page.evaluate('[getComputedStyle(document.body).color, getComputedStyle(document.body).backgroundColor]')
@@ -75,14 +116,14 @@ try:
             page.goto(f'{URL}/{name}.html')
             assert page.evaluate('CantinhoTheme.colors.background') == '#cc44aa', name
             assert page.evaluate('getComputedStyle(document.body).backgroundColor') == 'rgb(204, 68, 170)', name
-        page.goto(URL + '/index.html')
+        goto_index(page)
         page.screenshot(path=str(ARTIFACTS / 'index-custom.png'), full_page=True)
         page.locator('input[value="light"]').check()
         assert page.evaluate('localStorage.getItem("cantinho:background")') is None
         # Cross-tab changes and removal of the saved setting apply immediately.
         other = context.new_page()
         other.on('pageerror', lambda error: errors.append(str(error)))
-        other.goto(URL + '/index.html')
+        goto_index(other)
         other.locator('input[value="dark"]').check()
         page.wait_for_function('CantinhoTheme.dark')
         other.evaluate('localStorage.removeItem("cantinho:theme")')
@@ -95,10 +136,11 @@ try:
             get() { throw new DOMException('Blocked', 'SecurityError'); }
         });''')
         other.reload()
+        open_color_menu(other)
         other.locator('input[value="dark"]').check()
         assert other.evaluate('CantinhoTheme.dark')
         page.set_viewport_size({'width': 1280, 'height': 900})
-        page.goto(URL + '/index.html')
+        goto_index(page)
         page.locator('input[value="dark"]').check()
         page.screenshot(path=str(ARTIFACTS / 'index-desktop-dark.png'), full_page=True)
         assert not errors, errors
